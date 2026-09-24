@@ -338,6 +338,50 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
 .suggest .sp{margin-left:auto}
 .cmdrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .cmdrow code{font:11.5px var(--f-mono);background:var(--app-bg);border:1px solid var(--app-line);border-radius:5px;padding:3px 7px;color:var(--ink)}
+
+/* terminal integration */
+.xbtn .cp{display:none}
+body.alt .xbtn .ex, .xbtn.force-alt .ex{display:none}
+body.alt .xbtn .cp, .xbtn.force-alt .cp{display:inline-flex;align-items:center;gap:6px}
+.xbtn .ex{display:inline-flex;align-items:center;gap:6px}
+body.alt .xbtn.primary:not(.force-ex), .xbtn.force-alt{background:var(--app-raise);color:var(--ink);border-color:var(--app-line)}
+.xbtn.force-ex .ex{display:inline-flex!important} .xbtn.force-ex .cp{display:none!important}
+.althint{font-size:11px;color:var(--ink-3);white-space:nowrap}
+body.alt .althint .off, .althint .on{display:none}
+body.alt .althint .on{display:inline}
+.termchip{display:flex;align-items:center;gap:6px;padding:3px 9px;border-radius:14px;border:1px solid color-mix(in srgb,var(--add) 45%,transparent);background:color-mix(in srgb,var(--add) 10%,var(--app-bg));font-size:11.5px;white-space:nowrap}
+.termchip .dot{width:7px;height:7px;border-radius:50%;background:var(--add)}
+.settings{display:grid;grid-template-columns:180px minmax(0,1fr)}
+.settings nav{background:var(--app-panel);border-right:1px solid var(--app-line);padding:10px 0;display:flex;flex-direction:column}
+.settings nav span{padding:6px 14px;color:var(--ink-2)}
+.settings nav span.on{background:var(--app-sel);color:var(--ink);font-weight:600}
+.settings .pane{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.lvl{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lvl div{border:1px solid var(--app-line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;background:var(--app-bg)}
+.lvl div.on{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
+.lvl b{font-size:12.5px} .lvl span{color:var(--ink-2);font-size:11.5px}
+.tlist{border:1px solid var(--app-line);border-radius:8px;overflow:hidden;background:var(--app-bg)}
+.trow{display:grid;grid-template-columns:18px 130px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--app-line)}
+.trow:last-child{border-bottom:0}
+.trow.on{background:var(--app-sel)}
+.trow .radio{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--ink-3)}
+.trow.on .radio{border:4px solid var(--accent)}
+.trow .d{color:var(--ink-3);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trow.off{opacity:.5}
+.state{font:600 10.5px var(--f-ui);white-space:nowrap}
+.state.ok{color:var(--add)} .state.warn{color:var(--warn)} .state.no{color:var(--ink-3)}
+.target{display:grid;grid-template-columns:18px minmax(0,1fr) 150px auto;gap:10px;align-items:center;padding:7px 12px;border-bottom:1px solid var(--app-line);font-size:12px}
+.target:last-child{border-bottom:0}
+.target.on{background:var(--app-sel)}
+.target .cwd{font:11px var(--f-mono);color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--ink-2)}
+.check i{width:13px;height:13px;border-radius:3px;background:var(--accent);flex:none;margin-top:2px;position:relative}
+.check i::after{content:"";position:absolute;left:4px;top:1px;width:3px;height:7px;border:solid var(--accent-ink);border-width:0 2px 2px 0;transform:rotate(45deg)}
+.states2{display:flex;flex-direction:column;gap:14px}
+.statecard{border:1px solid var(--app-line);border-radius:10px;background:var(--app-panel);padding:12px;display:flex;flex-direction:column;gap:10px}
+.statecard .lab{font:600 10.5px var(--f-ui);letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.toast>span:not(.undo){flex:1 1 200px;min-width:0}
+.toast.warn{background:var(--warn-bg);color:var(--ink);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent)}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -380,9 +424,9 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
 <header class="top">
   <div class="masthead">
     <div class="id">
-      <span class="eyebrow">Creatiwity Incubator · planche design v0.2 · open source</span>
+      <span class="eyebrow">Creatiwity Incubator · planche design v0.3 · open source</span>
       <h1>Ramure</h1>
-      <p class="lede">Viewer git de bureau (Tauri · Rust · Vue) centré sur un commit graph très lisible. Les gestes (glisser, menu, palette) produisent des commandes git natives à coller dans votre terminal. Ramure ne modifie jamais le dépôt.</p>
+      <p class="lede">Viewer git de bureau (Tauri · Rust · Vue) centré sur un commit graph très lisible. Les gestes (glisser, menu, palette) produisent des commandes git natives, copiées (niveau 0) ou exécutées dans votre terminal (niveau 1). Ramure ne modifie jamais le dépôt lui-même.</p>
     </div>
     <div class="stack" style="gap:8px;align-items:flex-start">
       <span class="eyebrow">Thème des maquettes</span>
@@ -416,7 +460,8 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
         <span class="sep"></span>
         <div class="idchip" title="Identité effective, lue dans la config git"><span class="av" style="background:var(--l3);margin:0">JB</span>dev@creatiwity.net <span class="o">~/.gitconfig-creatiwity</span></div>
         <span class="sep"></span>
-        <div class="tbtn"><svg class="i"><use href="#i-clip"/></svg>Fetch</div>
+        <div class="termchip" title="Terminal connecté (niveau 1)"><span class="dot"></span>iTerm2 · sherpa · onglet 2</div>
+        <div class="tbtn"><svg class="i"><use href="#i-down"/></svg>Fetch</div>
         <div class="tbtn"><svg class="i"><use href="#i-term"/></svg>Commandes <span class="badge">2</span></div>
         <div class="search"><svg class="i"><use href="#i-search"/></svg><span class="q">Rechercher commits, refs, auteurs</span><kbd>⌘F</kbd></div>
         <div class="tbtn" style="min-width:auto"><svg class="i"><use href="#i-cmd"/></svg>⌘K</div>
@@ -545,7 +590,7 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
         <div class="graph" id="g-onto"></div>
         <div class="sheet">
           <div class="hd"><svg class="i"><use href="#i-rebase"/></svg><b>Rebase feat/a sur develop</b><span class="chip ok">Prête</span></div>
-          <div class="cmd-block"><code id="cmd-onto"></code><span class="b primary" style="height:24px">Copier <kbd style="background:transparent;color:inherit;border-color:currentColor">↵</kbd></span></div>
+          <div class="cmd-block"><code id="cmd-onto"></code><span class="b primary xbtn" style="height:24px"><span class="ex"><svg class="i"><use href="#i-term"/></svg>Exécuter dans iTerm2 <kbd style="background:transparent;color:inherit;border-color:currentColor">↵</kbd></span><span class="cp"><svg class="i"><use href="#i-copy"/></svg>Copier <kbd style="background:transparent;color:inherit;border-color:currentColor">⌥↵</kbd></span></span></div>
           <dl class="explain">
             <dt><span class="t-flag">--onto</span> <span class="t-ref" style="color:var(--l1)">develop</span></dt><dd>nouvelle base : develop actuel, <span class="mono">9c2e7f1</span></dd>
             <dt><span class="t-ref" style="color:var(--l3)">feat/a</span><span class="t-op">~3</span></dt><dd>exclut tout ce qui est sous les 3 commits propres de feat/a (l'ancien develop)</dd>
@@ -569,20 +614,84 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
   <div class="notes">
     <ul><li>Détection : reflog de la base (<span class="mono">merge-base --fork-point</span>) croisé avec l'équivalence de patchs (<span class="mono">git cherry</span>).</li><li>Les anciens commits restent affichés en pointillé, avec le sha de leur nouvelle version.</li></ul>
     <ul><li>Geste manuel : sélectionner une plage (clic puis <kbd>⇧</kbd>clic) et la glisser sur la nouvelle base.</li><li>Pile <span class="mono">feat/a ← feat/b</span> : Ramure propose <span class="mono">--update-refs</span> pour tout déplacer d'un coup.</li></ul>
-    <ul><li>Quand la commande est exécutée, le watcher la détecte et affiche l'annulation (planche I).</li><li>Si une ref bouge avant l'exécution, la fiche passe « périmée » et propose de régénérer.</li></ul>
+    <ul><li>Quand la commande est exécutée, le watcher la détecte et affiche l'annulation (planche J).</li><li>Si une ref bouge avant l'exécution, la fiche passe « périmée » et propose de régénérer.</li></ul>
+  </div>
+</section>
+
+<!-- E: terminal integration -->
+<section class="plate" id="terminal">
+  <div class="plate-head">
+    <div class="t"><span class="letter">E</span><h2>Intégration terminal</h2></div>
+    <p>Niveau 0 : les boutons copient. Niveau 1 : ils exécutent dans le terminal choisi, et <kbd>⌥</kbd> les rebascule en « Copier » tant qu'elle est enfoncée. Essayez : maintenez <kbd>⌥</kbd> (Alt) sur cette page.</p>
+  </div>
+  <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr))">
+    <div class="scroll">
+      <div class="win" style="min-width:640px">
+        <div class="tb"><div class="lights"><i></i><i></i><i></i></div><b>Réglages</b><span style="color:var(--ink-3)">· sherpa</span></div>
+        <div class="settings">
+          <nav><span>Général</span><span>Graph</span><span class="on">Intégration terminal</span><span>Commandes</span><span>Raccourcis</span></nav>
+          <div class="pane">
+            <div class="lvl">
+              <div><b>Niveau 0 · Copier</b><span>Les boutons copient la commande. Aucune configuration.</span></div>
+              <div class="on"><b>Niveau 1 · Terminal connecté</b><span>Les boutons exécutent dans le terminal choisi. <kbd>⌥</kbd> copie.</span></div>
+            </div>
+            <div class="eyebrow" style="font-size:10.5px">Terminal · intégrations détectées</div>
+            <div class="tlist">
+              <div class="trow on"><span class="radio"></span><b>iTerm2</b><span class="d">AppleScript · permission Automation accordée</span><span class="state ok">Disponible</span></div>
+              <div class="trow"><span class="radio"></span><b>tmux</b><span class="d">3 sessions, 7 panes</span><span class="state ok">Disponible</span></div>
+              <div class="trow"><span class="radio"></span><b>kitty</b><span class="d">Ajouter <span class="mono">allow_remote_control yes</span> à kitty.conf</span><span class="state warn">À configurer</span></div>
+              <div class="trow"><span class="radio"></span><b>Terminal.app</b><span class="d">Permission Automation à accorder au premier envoi</span><span class="state warn">Permission requise</span></div>
+              <div class="trow off"><span class="radio"></span><b>WezTerm</b><span class="d">Non installé</span><span class="state no">Absent</span></div>
+            </div>
+            <div class="eyebrow" style="font-size:10.5px">Cible dans iTerm2</div>
+            <div class="tlist">
+              <div class="target on"><span class="radio" style="width:12px;height:12px;border-radius:50%;border:4px solid var(--accent)"></span><span>Fenêtre 1 · onglet 2</span><span class="cwd">~/code/creatiwity/sherpa</span><span class="state ok">zsh · dossier du dépôt</span></div>
+              <div class="target"><span class="radio" style="width:12px;height:12px;border-radius:50%;border:1.5px solid var(--ink-3)"></span><span>Fenêtre 1 · onglet 3</span><span class="cwd">~/code/creatiwity/sherpa</span><span class="state warn">occupé : vim</span></div>
+              <div class="target"><span class="radio" style="width:12px;height:12px;border-radius:50%;border:1.5px solid var(--ink-3)"></span><span>Fenêtre 2 · onglet 1</span><span class="cwd">~</span><span class="state no">zsh · ajoutera git -C</span></div>
+              <div class="target"><span class="radio" style="width:12px;height:12px;border-radius:50%;border:1.5px solid var(--ink-3)"></span><span><svg class="i" style="vertical-align:-2px"><use href="#i-plus"/></svg> Ouvrir un nouvel onglet dans le dépôt</span><span class="cwd"></span><span></span></div>
+            </div>
+            <div class="check"><i></i><span>Préremplir sans valider les commandes non annulables (reset hard avec modifications, discard, push force-with-lease) : vous appuyez sur Entrée dans le terminal.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="states2">
+      <div class="statecard">
+        <span class="lab">Bouton, au repos</span>
+        <div class="cmd-block"><code><span class="t-git">git</span> <span class="t-sub">rebase</span> <span class="t-ref" style="color:var(--l0)">main</span></code><span class="b primary xbtn force-ex" style="height:24px"><span class="ex"><svg class="i"><use href="#i-term"/></svg>Exécuter dans iTerm2 <kbd style="background:transparent;color:inherit;border-color:currentColor">↵</kbd></span><span class="cp"><svg class="i"><use href="#i-copy"/></svg>Copier <kbd style="background:transparent;color:inherit;border-color:currentColor">⌥↵</kbd></span></span></div>
+        <span class="caption">Clic ou <kbd>↵</kbd> : la commande est tapée et validée dans iTerm2 · onglet 2.</span>
+      </div>
+      <div class="statecard">
+        <span class="lab"><kbd>⌥</kbd> enfoncée</span>
+        <div class="cmd-block"><code><span class="t-git">git</span> <span class="t-sub">rebase</span> <span class="t-ref" style="color:var(--l0)">main</span></code><span class="b primary xbtn force-alt" style="height:24px"><span class="ex"><svg class="i"><use href="#i-term"/></svg>Exécuter dans iTerm2 <kbd style="background:transparent;color:inherit;border-color:currentColor">↵</kbd></span><span class="cp"><svg class="i"><use href="#i-copy"/></svg>Copier <kbd style="background:transparent;color:inherit;border-color:currentColor">⌥↵</kbd></span></span></div>
+        <span class="caption">Tous les boutons de la fenêtre passent en « Copier » tant que la touche est enfoncée : on voit ce que fera le clic.</span>
+      </div>
+      <div class="statecard">
+        <span class="lab">Retours</span>
+        <div class="toast"><svg class="i" style="width:15px;height:15px"><use href="#i-term"/></svg><span>Envoyé à iTerm2 · onglet 2 : <span class="mono">git rebase main</span></span></div>
+        <div class="toast"><svg class="i" style="width:15px;height:15px"><use href="#i-check"/></svg><span>Commande exécutée : feature/scoring repose sur main.</span><span class="undo">Annuler <kbd>⌘Z</kbd></span></div>
+        <div class="toast warn"><svg class="i" style="width:15px;height:15px;color:var(--warn)"><use href="#i-warn"/></svg><span>iTerm2 · onglet 3 est occupé (vim). Commande copiée à la place.</span></div>
+        <div class="toast warn"><svg class="i" style="width:15px;height:15px;color:var(--warn)"><use href="#i-warn"/></svg><span><span class="mono">git reset --hard d88e1b4</span> préremplie dans iTerm2 : non annulable, validez avec Entrée.</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <ul><li>Intégrations prévues : tmux, WezTerm, kitty, iTerm2, Terminal.app, Windows Terminal (nouvel onglet seulement), Konsole plus tard.</li><li>Chaque intégration déclare ses capacités ; l'UI n'affiche que ce qui marche.</li></ul>
+    <ul><li>La cible dont le dossier est le dépôt est présélectionnée ; sinon la commande est préfixée par <span class="mono">git -C</span>.</li><li>Pas d'envoi si un programme occupe la cible : repli sur la copie.</li></ul>
+    <ul><li>Ramure ne lit pas la sortie du terminal : la confirmation vient du watcher, comme au niveau 0.</li><li>La pastille verte de la barre d'outils rappelle la cible ; <kbd>⌥</kbd> clic dessus repasse au niveau 0 pour la session.</li></ul>
   </div>
 </section>
 
 <!-- E: DnD -->
 <section class="plate" id="dnd">
   <div class="plate-head">
-    <div class="t"><span class="letter">E</span><h2>Drag &amp; drop</h2></div>
+    <div class="t"><span class="letter">F</span><h2>Drag &amp; drop</h2></div>
     <p>On attrape une pastille, les cibles valides s'éclairent et l'action par défaut s'écrit sous le curseur. Au lâcher, le menu classe les actions et affiche la commande ; choisir une action ouvre sa fiche, <kbd>↵</kbd> copie directement.</p>
   </div>
   <div class="scroll">
     <div class="win" style="min-width:980px">
       <div class="graph stage" id="g-dnd" style="padding-bottom:12px"></div>
-      <div class="cmdbar"><svg class="i"><use href="#i-term"/></svg><code><span class="t-git">git</span> <span class="t-sub">rebase</span> <span class="t-ref" style="color:var(--l0)">main</span></code><span style="color:var(--ink-3);font-size:11.5px">Annuler ensuite : <span class="mono">git reset --keep a41c9e2</span></span><span class="sp"><span class="b quiet">Détails</span><span class="b primary">Copier <kbd style="background:transparent;color:inherit;border-color:currentColor">↵</kbd></span></span></div>
+      <div class="cmdbar"><svg class="i"><use href="#i-term"/></svg><code><span class="t-git">git</span> <span class="t-sub">rebase</span> <span class="t-ref" style="color:var(--l0)">main</span></code><span style="color:var(--ink-3);font-size:11.5px">Annuler ensuite : <span class="mono">git reset --keep a41c9e2</span></span><span class="sp"><span class="althint"><span class="off">⌥ pour copier</span><span class="on">⌥ : copie</span></span><span class="b quiet">Détails</span><span class="b primary xbtn"><span class="ex"><svg class="i"><use href="#i-term"/></svg>Exécuter dans iTerm2 <kbd style="background:transparent;color:inherit;border-color:currentColor">↵</kbd></span><span class="cp"><svg class="i"><use href="#i-copy"/></svg>Copier <kbd style="background:transparent;color:inherit;border-color:currentColor">⌥↵</kbd></span></span></span></div>
     </div>
   </div>
   <div class="notes">
@@ -595,7 +704,7 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
 <!-- F: rebase -->
 <section class="plate" id="rebase">
   <div class="plate-head">
-    <div class="t"><span class="letter">F</span><h2>Rebase interactif</h2></div>
+    <div class="t"><span class="letter">G</span><h2>Rebase interactif</h2></div>
     <p>La todo-list de git, rendue éditable : action par ligne au clavier (<kbd>p</kbd> <kbd>r</kbd> <kbd>e</kbd> <kbd>s</kbd> <kbd>f</kbd> <kbd>d</kbd>), réordonnancement à la poignée ou <kbd>⌥↑</kbd>/<kbd>⌥↓</kbd>, reword en ligne. Le résultat est une seule commande qui applique cette todo sans éditeur.</p>
   </div>
   <div class="scroll">
@@ -625,7 +734,7 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
           <div class="cmd-block"><code><span class="t-git">git</span> <span class="t-flag">-c</span> <span class="t-str">sequence.editor="cp '/tmp/ramure/todo-7f3a'"</span> <span class="t-sub">rebase</span> <span class="t-flag">-i --autosquash</span> <span class="t-ref" style="color:var(--l0)">main</span></code></div>
           <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
             <div class="keys"><span><kbd>p</kbd>pick</span><span><kbd>r</kbd>reword</span><span><kbd>e</kbd>edit</span><span><kbd>s</kbd>squash</span><span><kbd>f</kbd>fixup</span><span><kbd>d</kbd>drop</span><span><kbd>⌥↑↓</kbd>déplacer</span></div>
-            <div class="sp"><span class="b quiet">Voir la todo</span><span class="b quiet">Annuler <kbd>esc</kbd></span><span class="b primary">Copier la commande <kbd style="background:transparent;color:inherit;border-color:currentColor">⌘↵</kbd></span></div>
+            <div class="sp"><span class="b quiet">Voir la todo</span><span class="b quiet">Annuler <kbd>esc</kbd></span><span class="b primary xbtn"><span class="ex"><svg class="i"><use href="#i-term"/></svg>Exécuter dans iTerm2 <kbd style="background:transparent;color:inherit;border-color:currentColor">↵</kbd></span><span class="cp"><svg class="i"><use href="#i-copy"/></svg>Copier <kbd style="background:transparent;color:inherit;border-color:currentColor">⌥↵</kbd></span></span></div>
           </div>
         </div>
       </div>
@@ -638,7 +747,7 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
 <div class="grid2">
   <section class="plate" id="palette">
     <div class="plate-head">
-      <div class="t"><span class="letter">G</span><h2>Palette de commandes</h2></div>
+      <div class="t"><span class="letter">H</span><h2>Palette de commandes</h2></div>
       <p>Même moteur flou que la recherche, étendu aux actions, branches, tags et fichiers. Chaque action montre la commande qu'elle va produire.</p>
     </div>
     <div class="canvas-pad">
@@ -646,7 +755,7 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
         <div class="in"><svg class="i" style="width:16px;height:16px;color:var(--ink-3)"><use href="#i-search"/></svg><span>reb<span class="caret" style="display:inline-block;width:1px;height:16px;background:var(--accent);vertical-align:-3px"></span></span><span class="scope">Tout</span></div>
         <div class="res">
           <div class="mlabel">Actions</div>
-          <div class="mi hot"><svg class="i"><use href="#i-rebase"/></svg><span class="two"><span><b>Reb</b>ase feature/scoring sur main</span><span class="cmd">git rebase main</span></span><span class="k">↵ copier</span></div>
+          <div class="mi hot"><svg class="i"><use href="#i-rebase"/></svg><span class="two"><span><b>Reb</b>ase feature/scoring sur main</span><span class="cmd">git rebase main</span></span><span class="k">↵</span></div>
           <div class="mi"><svg class="i"><use href="#i-rebase"/></svg><span><b>Reb</b>ase interactif depuis…</span><span class="k">⌘⇧I</span></div>
           <div class="mi"><svg class="i"><use href="#i-layers"/></svg><span><b>Reb</b>ase --onto…</span></div>
           <div class="mi dis"><svg class="i"><use href="#i-x"/></svg><span class="two"><span>Abandonner le <b>reb</b>ase</span><span class="cmd">aucun rebase en cours</span></span></div>
@@ -657,14 +766,14 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
           <div class="mlabel">Commits</div>
           <div class="mi"><span class="mono" style="color:var(--ink-3);font-size:11px">3be0a71</span><span style="overflow:hidden;text-overflow:ellipsis">docs: <b>re</b>mplace le <b>b</b>adge de build</span></div>
         </div>
-        <div class="foot"><span><kbd>↑</kbd><kbd>↓</kbd> naviguer</span><span><kbd>↵</kbd> copier</span><span><kbd>⇥</kbd> fiche détaillée</span><span><kbd>esc</kbd> fermer</span></div>
+        <div class="foot"><span><kbd>↑</kbd><kbd>↓</kbd> naviguer</span><span><kbd>↵</kbd> exécuter</span><span><kbd>⌥↵</kbd> copier</span><span><kbd>⇥</kbd> fiche détaillée</span><span><kbd>esc</kbd> fermer</span></div>
       </div>
     </div>
   </section>
 
   <section class="plate" id="menu">
     <div class="plate-head">
-      <div class="t"><span class="letter">H</span><h2>Menu contextuel d'un commit</h2></div>
+      <div class="t"><span class="letter">I</span><h2>Menu contextuel d'un commit</h2></div>
       <p>Groupes stables (naviguer · créer · appliquer · déplacer · copier). Le sous-menu reset montre la commande de chaque variante ; <span class="mono">--keep</span> est proposé par défaut car il refuse de perdre des modifications.</p>
     </div>
     <div class="canvas-pad" style="gap:16px">
@@ -697,7 +806,7 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
 <!-- I: states -->
 <section class="plate" id="etats">
   <div class="plate-head">
-    <div class="t"><span class="letter">I</span><h2>États : opération en cours, exécution détectée, fiche périmée</h2></div>
+    <div class="t"><span class="letter">J</span><h2>États : opération en cours, exécution détectée, fiche périmée</h2></div>
     <p>Ramure observe le dépôt : il voit un rebase lancé dans le terminal, propose les commandes pour continuer, et confirme quand une commande générée a été exécutée.</p>
   </div>
   <div class="grid2">
@@ -734,7 +843,7 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
 <!-- J: tokens -->
 <section class="plate" id="tokens">
   <div class="plate-head">
-    <div class="t"><span class="letter">J</span><h2>Fondations</h2></div>
+    <div class="t"><span class="letter">K</span><h2>Fondations</h2></div>
     <p>Neutres légèrement bleutés, un seul accent d'interface, huit couleurs de lanes et leurs versions désaturées pour le mode focus, une coloration dédiée aux commandes.</p>
   </div>
   <div class="tok">
@@ -782,7 +891,7 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
   </div>
 </section>
 
-<footer><span>Ramure · planche design v0.2 · septembre 2026 · MIT OR Apache-2.0</span><span>Références : spec-ramure.md (F-xx), ux-graph.md (D1–D8)</span><span>Données d'exemple fictives inspirées du projet sherpa</span></footer>
+<footer><span>Ramure · planche design v0.3 · septembre 2026 · MIT OR Apache-2.0</span><span>Références : spec-ramure.md (F-xx), ux-graph.md (D1–D8)</span><span>Données d'exemple fictives inspirées du projet sherpa</span></footer>
 </div>
 
 <script>
@@ -1037,6 +1146,13 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
   markers();
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(markers);
   window.addEventListener('resize', markers);
+
+
+  // hold Alt/Option: every exec button shows its copy variant
+  function setAlt(on){ document.body.classList.toggle('alt', on); }
+  window.addEventListener('keydown', function(e){ if(e.key === 'Alt') setAlt(true); });
+  window.addEventListener('keyup', function(e){ if(e.key === 'Alt') setAlt(false); });
+  window.addEventListener('blur', function(){ setAlt(false); });
 
   // J: swatches
   var names = ['Bleu','Violet','Sarcelle','Ambre','Rose','Vert','Orange','Cyan'];

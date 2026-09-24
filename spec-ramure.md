@@ -1,7 +1,15 @@
 # Ramure : cahier des charges
 
-> Version 0.2 · Statut : **spécification** (draft à challenger)
+> Version 0.3 · Statut : **spécification** (draft à challenger)
 > Planche design : [`design-board.html`](./design-board.html) · Lisibilité du graph : [`ux-graph.md`](./ux-graph.md)
+
+### Changements depuis la v0.2
+
+- **Niveaux d'intégration du terminal** (§3.7) : niveau 0 = copier la commande ; niveau 1 =
+  Ramure envoie la commande dans un terminal externe choisi par l'utilisateur parmi les
+  intégrations supportées (tmux, iTerm2, Terminal.app, WezTerm, kitty…), et ⌥ (Alt) copie à la
+  place. Toujours pas de terminal intégré.
+- Question « exécution directe » (§10) tranchée par ces niveaux.
 
 ### Changements depuis la v0.1
 
@@ -47,16 +55,19 @@ transforme les gestes (glisser, menu, palette) en **commandes git natives prête
 2. **Git natif, rien d'autre.** Ramure ne connaît que le dépôt local et la config git. Pas
    d'API GitHub/GitLab/Bitbucket, pas de compte, pas de cloud, pas de télémétrie, pas d'avatar
    distant. Ramure ne fait aucune requête réseau (même `fetch` est une commande à copier).
-3. **Lecture seule sur le dépôt.** Les opérations sont des **commandes générées** que
-   l'utilisateur exécute dans son terminal, avec son contexte (shell, identité, agent SSH, hooks,
-   signature). Ramure détecte le résultat grâce au watcher et met le graph à jour.
+3. **Lecture seule sur le dépôt.** Les opérations sont des **commandes générées** qui
+   s'exécutent toujours dans le terminal de l'utilisateur, avec son contexte (shell, identité,
+   agent SSH, hooks, signature) : copiées-collées (niveau 0) ou envoyées par Ramure dans le
+   terminal choisi (niveau 1, §3.7). Ramure ne lance jamais `git` en écriture lui-même et détecte
+   le résultat grâce au watcher.
 4. **Réutiliser le standard.** Identités, signature, alias, `rerere`, `pull.rebase` : tout vient
    de la config git ; Ramure l'affiche, ne la duplique pas.
 
 ### 1.3 Hors périmètre (explicitement et durablement)
 
 - Intégrations de services : PR/MR, issues, CI, forges, avatars Gravatar.
-- Terminal intégré ; exécution de commandes d'écriture (réévaluable plus tard, voir §10).
+- Terminal intégré, et exécution de commandes d'écriture par Ramure lui-même (hors du terminal
+  de l'utilisateur).
 - Gestion d'identifiants (credential helper, SSH) et de profils git.
 - Staging, commit, édition de fichiers, résolution de conflits intégrée.
 - Fonctions IA, synchronisation de préférences, VCS autres que git.
@@ -69,6 +80,8 @@ transforme les gestes (glisser, menu, palette) en **commandes git natives prête
 - Builds signés et publiés via GitHub Releases ; mises à jour via le plugin updater de Tauri
   (seule requête réseau de l'application, désactivable, et désactivée dans les builds distribués
   par des gestionnaires de paquets).
+- Les intégrations de terminaux (§3.7) sont des modules indépendants, pour faciliter les
+  contributions externes (« ajouter mon terminal »).
 
 ---
 
@@ -151,7 +164,7 @@ repliables, avec filtre texte. Clic = aller au commit.
 
 **Palette de commandes** (M, ⌘/Ctrl+K) : même moteur, portée élargie aux branches, tags,
 fichiers et **actions** (« Rebase interactif… », « Fetch all »…). Chaque action aboutit à une
-commande générée (§3.6).
+commande générée (§3.6–3.7).
 
 ### 3.4 Détails de commit et diff (lecture)
 
@@ -179,7 +192,7 @@ commande** au lieu d'agir :
 
 | ID | Prio | Fonctionnalité |
 |----|------|----------------|
-| F-60 | M | **Commande git native**, colorée (refs dans la couleur de leur branche), copiable en un clic (⌘/Ctrl+C) ou en ↵ depuis la fiche. Plusieurs étapes enchaînées par `&&`. |
+| F-60 | M | **Commande git native**, colorée (refs dans la couleur de leur branche), copiable en un clic (⌘/Ctrl+C) ou en ↵ depuis la fiche, ou exécutée dans le terminal choisi au niveau 1 (§3.7). Plusieurs étapes enchaînées par `&&`. |
 | F-61 | M | **Explication** ligne à ligne des arguments (« `--onto develop` : nouvelle base = develop actuel, 9c2e7f1 »). |
 | F-62 | M | **Aperçu** avant/après du graph concerné (mini-graph). |
 | F-63 | M | **Commande d'annulation** calculée au moment de la génération, avec des sha explicites (`git reset --keep 7a1e0c4`, `git branch -f feat/a 7a1e0c4`). Conservée dans l'historique des commandes. |
@@ -189,7 +202,50 @@ commande** au lieu d'agir :
 | F-67 | S | Historique des commandes générées (session), avec leur statut (copiée, exécutée détectée) et leur annulation. |
 | F-68 | S | Survol long d'une entrée de menu : la commande s'affiche en infobulle. |
 
-### 3.7 Opérations couvertes (toutes en commandes générées)
+### 3.7 Niveaux d'intégration du terminal
+
+Ramure n'a pas de terminal intégré : il **s'appuie sur celui que l'utilisateur utilise déjà**. Le
+niveau se règle par dépôt (ou globalement) et change le comportement des boutons des fiches de
+commande, menus, palette et drag & drop.
+
+| Niveau | Nom | Clic / ↵ | ⌥ clic / ⌥↵ |
+|--------|-----|----------|-------------|
+| **0** | Copier | copie la commande | — |
+| **1** | Terminal connecté | **envoie la commande dans le terminal choisi et l'exécute** | copie la commande (comme au niveau 0) |
+
+Au niveau 1, maintenir ⌥ (Alt) bascule visuellement tous les boutons en « Copier » : le libellé
+change tant que la touche est enfoncée, pour que l'utilisateur sache ce que fera son clic.
+
+| ID | Prio | Fonctionnalité |
+|----|------|----------------|
+| F-100 | M | Niveau 0 : copie (comportement de §3.6). Disponible partout, sans configuration. |
+| F-101 | S | Réglage « Intégration terminal » : choix du terminal parmi les intégrations **détectées** sur la machine, avec leur état (disponible, permission requise, non configuré). |
+| F-102 | S | Choix de la **cible** : session / onglet / pane existant, listé avec son dossier courant et le programme au premier plan. Ramure présélectionne la cible dont le dossier est le dépôt ouvert. Option « Ouvrir un nouvel onglet dans le dépôt » quand aucune cible ne convient. Cible mémorisée par dépôt. |
+| F-103 | S | Envoi : la commande est tapée dans la cible puis validée (Entrée). Toujours préfixée par `git -C '<dépôt>'` si le dossier courant de la cible n'est pas le dépôt (ou si l'intégration ne sait pas le dire). |
+| F-104 | S | **Garde-fous** : pas d'envoi si la cible n'a pas un shell au premier plan (vim, less, un process en cours…) ; message « iTerm2 · onglet 2 est occupé (vim) » et copie proposée. Les commandes **non annulables** (reset hard avec fichiers modifiés, discard, push force-with-lease) sont **préremplies sans Entrée** : l'utilisateur valide dans son terminal. |
+| F-105 | S | Retour : Ramure ne lit pas la sortie du terminal ; il confirme via le watcher (« Commande exécutée : feat/a déplacée ») comme au niveau 0 et propose l'annulation (envoyée ou copiée selon ⌥). |
+| F-106 | S | Indicateur permanent dans la barre d'outils : « ⌘ iTerm2 · sherpa (onglet 2) », clic = changer de cible, ⌥ clic = revenir au niveau 0 pour la session. |
+| F-107 | C | Dialecte de shell déduit de la cible (programme au premier plan) plutôt que du réglage. |
+
+**Intégrations prévues** (chaque intégration déclare ce qu'elle sait faire : lister les cibles,
+connaître le dossier courant et le programme au premier plan, envoyer du texte, valider, ouvrir
+un onglet) :
+
+| Terminal | OS | Mécanisme | Lister / cwd | Envoyer | Ouvrir un onglet | Prio |
+|----------|----|-----------|--------------|---------|------------------|------|
+| tmux | macOS, Linux | `tmux list-panes -a -F …`, `tmux send-keys -t <pane> -l '<cmd>'` puis `Enter` | oui (`pane_current_path`, `pane_current_command`) | oui | `tmux new-window -c <dépôt>` | S |
+| WezTerm | tous | `wezterm cli list --format json`, `wezterm cli send-text --pane-id` | oui | oui | `wezterm cli spawn --cwd` | S |
+| kitty | macOS, Linux | remote control (`kitty @ ls`, `kitty @ send-text`), à activer par l'utilisateur | oui | oui | `kitty @ launch --cwd` | S |
+| iTerm2 | macOS | AppleScript (`write text` dans une session) ; permission Automation macOS | partiel (via variables de session) | oui | oui | S |
+| Terminal.app | macOS | AppleScript (`do script … in` un onglet) ; permission Automation | non | oui | oui | S |
+| Windows Terminal | Windows | `wt.exe -w 0 nt -d <dépôt>` : ne sait pas écrire dans un onglet existant | non | nouvel onglet uniquement | oui | S |
+| Konsole | Linux | D-Bus (`runCommand` sur une session) | partiel | oui | oui | C |
+| Autres (Ghostty, Warp, GNOME Terminal, terminal de VS Code…) | — | selon les API disponibles ; à défaut, niveau 0 | — | — | — | C |
+
+Pour les terminaux sans API d'envoi (Windows Terminal), le niveau 1 se limite à « ouvrir un
+onglet dans le dépôt et y lancer la commande », signalé comme tel dans le réglage.
+
+### 3.8 Opérations couvertes (toutes en commandes générées)
 
 | ID | Prio | Opération | Exemple de commande |
 |----|------|-----------|---------------------|
@@ -202,7 +258,7 @@ commande** au lieu d'agir :
 | F-76 | S | Commit `fixup!` ciblant un commit sélectionné (le commit est fait par l'utilisateur) | `git commit --fixup=e27d410` |
 | F-77 | M | Commandes pour une opération en cours : continuer, passer, annuler, prendre *ours*/*theirs* sur un fichier | `git checkout --theirs -- path && git add path` |
 
-### 3.8 Branches empilées et `rebase --onto` assisté
+### 3.9 Branches empilées et `rebase --onto` assisté
 
 Cas d'usage : `feat/a` est partie de `develop` ; `develop` a été réécrite (rebase sur `main`,
 amend). `feat/a` repose désormais sur des commits qui n'existent plus dans `develop`. Un simple
@@ -216,7 +272,7 @@ modifiés.
 | F-82 | S | **Geste manuel** : sélectionner une plage de commits d'une branche (clic puis ⇧clic), la glisser sur la nouvelle base → `git rebase --onto <cible> <premier>~1 <branche>`. |
 | F-83 | S | **Pile de branches** (`feat/a` ← `feat/b` ← `feat/c`) : proposer `--update-refs` pour déplacer toute la pile en une commande (`git rebase --update-refs develop feat/c`). |
 
-### 3.9 Rebase interactif
+### 3.10 Rebase interactif
 
 L'éditeur visuel produit **une seule commande** qui applique la todo préparée, sans éditeur
 interactif :
@@ -238,7 +294,7 @@ temporaires sont écrits dans le dossier temporaire de l'application, jamais dan
 | F-93 | S | Génération de la commande (ci-dessus) avec commande d'annulation (`git reset --keep <sha d'origine>`). |
 | F-94 | M | Bandeau « Rebase en cours — 3/7 » (quel que soit l'outil qui l'a lancé), fichiers en conflit, et commandes `--continue` / `--skip` / `--abort` à copier. |
 
-### 3.10 Drag & drop et menu contextuel
+### 3.11 Drag & drop et menu contextuel
 
 Même matrice qu'en v0.1, chaque action aboutissant à une fiche de commande (F-60) :
 
@@ -260,7 +316,7 @@ cherry-pick · revert · reset *branche courante* ici ▸ · rebase interactif d
 D'une pastille : checkout · merge dans courante · rebase courante sur celle-ci · rebase `--onto`… ·
 push / pull · renommer · supprimer · copier le nom.
 
-### 3.11 Clavier
+### 3.12 Clavier
 
 | Raccourci | Action |
 |-----------|--------|
@@ -270,15 +326,17 @@ push / pull · renommer · supprimer · copier le nom.
 | ← / → | Premier parent / premier enfant |
 | H | Aller à `HEAD` |
 | Espace | Panneau de détails |
-| ↵ ou ⌘C (fiche de commande ouverte) | Copier la commande |
-| ⌘Z | Copier la commande d'annulation de la dernière commande exécutée |
+| ↵ (fiche de commande ouverte) | Niveau 0 : copier · niveau 1 : exécuter dans le terminal choisi |
+| ⌥↵ · ⌥ clic | Copier au lieu d'exécuter (niveau 1) |
+| ⌘C (fiche ouverte) | Copier, quel que soit le niveau |
+| ⌘Z | Annulation de la dernière commande exécutée (copiée ou envoyée selon le niveau) |
 | ⌘B | Branche au commit sélectionné |
 | ⌘1..9 | Onglet de dépôt n |
 
-### 3.12 Préférences
+### 3.13 Préférences
 
-M : thème, police et taille, format de date, éditeur externe (ouvrir un fichier), dialecte de
-shell, préfixe `git -C`, refs relatives ou sha, branches de tronc, langue (FR/EN).
+M : thème, police et taille, format de date, éditeur externe (ouvrir un fichier), niveau
+d'intégration et terminal cible (S), dialecte de shell, préfixe `git -C`, refs relatives ou sha, branches de tronc, langue (FR/EN).
 S : raccourcis, couleurs des lanes, mode couleur par défaut (focus / arc-en-ciel).
 
 ---
@@ -308,9 +366,15 @@ Wayland). git ≥ 2.38 requis (pour `--update-refs`), vérifié au démarrage.
 - **Aucune écriture dans le dépôt**, aucune exécution de commande d'écriture git.
 - **Aucune requête réseau**, hors vérification de mise à jour (désactivable).
 - Aucun identifiant manipulé ni stocké.
-- Tauri : capabilities minimales, pas d'accès shell depuis le front, CSP stricte. Le seul
-  processus lancé est `git` en lecture (`log`, `cherry`, `merge-base`, `config --show-origin`)
-  quand `gix` ne suffit pas.
+- Tauri : capabilities minimales, pas d'accès shell depuis le front, CSP stricte. Processus
+  lancés : `git` en lecture (`log`, `cherry`, `merge-base`, `config --show-origin`) quand `gix`
+  ne suffit pas, et, au niveau 1 seulement, les outils de pilotage du terminal choisi (`tmux`,
+  `wezterm cli`, `kitty @`, `osascript`, `wt.exe`, D-Bus) via une liste blanche côté Rust.
+- Au niveau 1, la commande passe par l'outil de pilotage sous forme d'argument (jamais
+  interpolée dans un script) ; les scripts AppleScript sont fixes et reçoivent la commande en
+  paramètre.
+- Ramure n'écrit toujours rien lui-même : même au niveau 1, c'est le shell de l'utilisateur qui
+  exécute la commande, dans sa session.
 - Commandes générées : citation stricte des arguments selon le dialecte de shell (noms de
   branches avec caractères spéciaux), testée par des tests de propriété.
 
@@ -337,6 +401,7 @@ plus des couleurs (D8), palette vérifiée en daltonisme. FR et EN dès le MVP.
 │  stack::   fork-point, équivalence de patchs, piles de branches        │
 │  search::  index colonnaire + nucleo + rayon                           │
 │  cmdgen::  construction des commandes, citation par shell, undo        │
+│  term::    intégrations terminal (tmux, WezTerm, kitty, iTerm2…)      │
 │  watch::   notify (debounce) → invalidation incrémentale, détection    │
 └───────────────────────────────────────────────────────────────────────┘
 ```
@@ -376,19 +441,41 @@ frappe ; `path:` et `diff:` streamés en tâche de fond.
 - Tests : chaque commande générée est exécutée en CI sur des dépôts fixtures et le graph obtenu
   est comparé à l'aperçu annoncé.
 
-### 5.6 Front
+### 5.6 Intégrations terminal (`term::`)
+
+Chaque intégration implémente un trait commun, et déclare ses capacités pour que l'UI
+n'affiche que ce qui marche :
+
+```rust
+trait TerminalBackend {
+    fn id(&self) -> &'static str;                   // "tmux", "iterm2", …
+    fn detect(&self) -> Availability;               // installé, permission requise, à configurer
+    fn capabilities(&self) -> Caps;                 // LIST, CWD, FOREGROUND, SEND, OPEN_TAB
+    fn targets(&self) -> Result<Vec<Target>>;       // id, libellé, cwd?, programme au premier plan?
+    fn send(&self, t: &TargetId, cmd: &str, submit: bool) -> Result<()>;
+    fn open_tab(&self, cwd: &Path, cmd: Option<&str>) -> Result<TargetId>;
+}
+```
+
+- `submit = false` sert au préremplissage des commandes non annulables (F-104).
+- Envoi en *bracketed paste* quand l'outil le permet (WezTerm par défaut, `tmux send-keys -l`),
+  pour que le shell ne l'interprète pas caractère par caractère.
+- Tests : backend `tmux` testé en CI (Linux) de bout en bout ; les autres via des mocks des
+  outils de pilotage, plus une checklist manuelle par release.
+
+### 5.7 Front
 
 Vue 3 (Composition API) + TypeScript strict + Vite, Pinia, bindings générés par `tauri-specta`,
 CodeMirror 6 pour les diffs, drag & drop maison sur Pointer Events, composants maison sur tokens
 CSS. Tests : Vitest, Playwright sur le build web avec backend mocké.
 
-### 5.7 Arborescence cible
+### 5.8 Arborescence cible
 
 ```
 ramure/
 ├── src-tauri/src/
 │   ├── main.rs
-│   ├── repo/  graph/  stack/  search/  cmdgen/
+│   ├── repo/  graph/  stack/  search/  cmdgen/  term/
 │   ├── watch.rs
 │   └── ipc.rs
 ├── src-tauri/benches/
@@ -417,8 +504,8 @@ ramure/
 | **0 — Spike** | 1–2 sem. | `gix` + lanes + rendu canvas virtualisé sur 1 M commits ; prototype de la mise en page refs · graph · texte ; mesure `nucleo`. | Go/no-go perf + test utilisateur rapide (`ux-graph.md` §5) |
 | **1 — Viewer** | 3–4 sem. | F-01..04, F-10..17, F-26, F-30..32, F-36, palette, F-40..42, F-45, F-50, barre latérale, thèmes. Extraction en dépôt public. | Utilisable en viewer à côté du terminal |
 | **2 — Commandes** | 3–4 sem. | F-60..66, F-70..75, F-77, menus contextuels, drag & drop de base, F-94. | **Remplace GitKraken** pour la majorité des gestes |
-| **3 — V1** | 4 sem. | F-80..83 (`--onto`, piles), F-90..93 (rebase interactif), F-18..24, F-33..34, F-43..44, F-51, F-67..68, onglets, updater, EN. | **Résiliation GitKraken**, release publique 1.0 |
-| **4 — Ensuite** | continu | F-25, F-35, F-46, worktrees, sous-modules ; réévaluer l'exécution directe (§10). | — |
+| **3 — V1** | 5 sem. | F-80..83 (`--onto`, piles), F-90..93 (rebase interactif), niveau 1 du terminal (F-101..106) avec tmux, WezTerm, kitty, iTerm2, Terminal.app, Windows Terminal, F-18..24, F-33..34, F-43..44, F-51, F-67..68, onglets, updater, EN. | **Résiliation GitKraken**, release publique 1.0 |
+| **4 — Ensuite** | continu | F-25, F-35, F-46, F-107, worktrees, sous-modules, intégrations terminal supplémentaires (Konsole, Ghostty…). | — |
 
 ---
 
@@ -427,7 +514,10 @@ ramure/
 | Risque | Impact | Parade |
 |--------|--------|--------|
 | Coller une commande dans le mauvais dossier ou sur un état qui a changé | Élevé | Option `git -C <chemin>` ; sha explicites en option ; fiche marquée « périmée » quand les refs ont bougé ; commande d'annulation toujours fournie. |
-| Friction du copier-coller pour les gestes très fréquents (checkout, fetch) | Moyen | Mesurer à l'usage ; si besoin, exécution directe d'une liste blanche de commandes non destructives (question ouverte §10). |
+| Friction du copier-coller pour les gestes très fréquents (checkout, fetch) | Moyen | Niveau 1 : envoi direct dans le terminal choisi (§3.7). |
+| Commande envoyée dans la mauvaise cible, ou pendant que l'utilisateur tape | Élevé | Cible affichée en permanence (F-106), `git -C` automatique, refus si un programme occupe la cible, préremplissage sans Entrée pour le non annulable (F-104). |
+| API des terminaux instables ou absentes (AppleScript, remote control désactivé) | Moyen | Capacités déclarées par intégration, détection au démarrage, repli sur le niveau 0 avec message explicite. |
+| Permissions macOS (Automation) refusées | Faible | Explication dans le réglage et bouton vers les préférences système ; repli niveau 0. |
 | Citation incorrecte sous PowerShell ou fish | Moyen | Arguments structurés + tests de propriété par dialecte. |
 | Détection de fork-point faussée (reflog expiré, branche clonée récemment) | Moyen | Croiser fork-point et équivalence de patchs ; toujours montrer l'aperçu ; ne jamais proposer sans aperçu vérifiable. |
 | `gix` incomplet sur certains dépôts | Moyen | Fallback lecture via la CLI ; fixtures variées en CI. |
@@ -456,6 +546,8 @@ ramure/
 
 **V1**
 
+- [ ] Niveau 1 avec tmux et iTerm2 : un clic exécute la commande dans la cible choisie, ⌥ clic la copie, et le libellé des boutons change pendant l'appui sur ⌥.
+- [ ] Une cible occupée (vim ouvert) n'est jamais écrite ; une commande non annulable est préremplie sans être validée.
 - [ ] Sur le scénario `develop` réécrite, Ramure propose `git rebase --onto develop feat/a~3 feat/a` et le résultat ne contient que les 3 commits de `feat/a`.
 
 ---
@@ -469,14 +561,14 @@ ramure/
 | Licence | Open source, MIT OR Apache-2.0 |
 | Services externes | Aucune intégration, durablement |
 | Profils git | Gérés par git (`includeIf`) ; Ramure lit et affiche seulement |
-| Terminal | Non intégré ; commandes générées à coller |
+| Terminal | Non intégré. Niveau 0 : commandes à copier. Niveau 1 : envoi dans un terminal externe choisi (tmux, WezTerm, kitty, iTerm2, Terminal.app, Windows Terminal), ⌥ pour copier |
 | Vue du graph | Refs · graph · texte, messages alignés (`ux-graph.md`) |
 
 **Ouvert**
 
 1. **Staging et commit** : confirmer qu'ils restent hors périmètre (faits dans l'IDE ou le
    terminal), Ramure ne montrant que le WIP en lecture.
-2. **Exécution directe** plus tard, pour une liste blanche de commandes non destructives
-   (`fetch`, `switch`, `branch`) avec la même fiche de commande ? À décider après 1 mois d'usage.
+2. **Niveau 1 et commandes non annulables** : préremplir sans Entrée (proposé) ou exécuter
+   comme les autres après une confirmation dans Ramure ?
 3. **Licence exacte** : double MIT/Apache-2.0 proposée ; à valider.
 4. **Nom** : « Ramure » est un nom de code ; vérifier la disponibilité (crates.io, npm, domaine).
