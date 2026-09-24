@@ -258,6 +258,86 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
   .caret{animation:blink 1.1s steps(1) infinite}
   @keyframes blink{50%{opacity:0}}
 }
+
+/* ===== v0.2 additions ===== */
+:root{
+  --m0:color-mix(in srgb,var(--l0) 34%,var(--app-line)); --m1:color-mix(in srgb,var(--l1) 34%,var(--app-line));
+  --m2:color-mix(in srgb,var(--l2) 34%,var(--app-line)); --m3:color-mix(in srgb,var(--l3) 34%,var(--app-line));
+  --m4:color-mix(in srgb,var(--l4) 34%,var(--app-line)); --m5:color-mix(in srgb,var(--l5) 34%,var(--app-line));
+  --m6:color-mix(in srgb,var(--l6) 34%,var(--app-line)); --m7:color-mix(in srgb,var(--l7) 34%,var(--app-line));
+  --mx:var(--lx);
+}
+.row>span.refs{display:flex;justify-content:flex-end;align-items:center;gap:4px;padding:0 10px 0 6px}
+.more{font:600 10.5px var(--f-mono);color:var(--ink-3);padding:0 2px;flex:none}
+.ctype{flex:none;width:60px;font:500 11px var(--f-mono);color:var(--ink-3)}
+.scope{color:var(--ink-3);margin-right:6px}
+.row .msg .txt.mg{color:var(--ink-3)}
+.mg b{font-weight:500;color:var(--ink-2)}
+.pr{font:11px var(--f-mono);color:var(--ink-3);margin-left:8px}
+.row .who.rep{color:var(--ink-3);opacity:.6}
+.row.ghost>span:not(.refs){opacity:.6}
+.row.ghost .txt{font-style:italic}
+.ghostnote{font:500 10.5px var(--f-ui);color:var(--ink-3);border:1px dashed color-mix(in srgb,var(--ink-3) 60%,transparent);border-radius:4px;padding:1px 5px;margin-left:8px;flex:none;font-style:normal}
+.warnchip{display:inline-flex;align-items:center;gap:3px;height:18px;padding:0 5px;border-radius:4px;font:600 10px var(--f-ui);color:var(--warn);background:var(--warn-bg);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);flex:none;white-space:nowrap}
+.warnchip svg.i{width:11px;height:11px}
+.idchip{display:flex;align-items:center;gap:7px;padding:3px 10px 3px 4px;border-radius:14px;border:1px solid var(--app-line);background:var(--app-bg);font-size:11.5px;white-space:nowrap}
+.idchip .o{color:var(--ink-3);font:10.5px var(--f-mono)}
+.minimap{position:absolute;right:0;top:26px;bottom:0;width:11px;border-left:1px solid var(--app-line);background:var(--app-panel)}
+.minimap .thumb{position:absolute;left:1px;right:1px;top:0;height:8%;border-radius:3px;background:color-mix(in srgb,var(--ink-3) 30%,transparent)}
+.minimap i{position:absolute;left:2px;right:2px;height:3px;border-radius:1px}
+.tick{position:absolute;width:0;height:16px;border-left:2px solid var(--danger);pointer-events:none;z-index:4}
+.guide{position:absolute;top:26px;bottom:0;border-left:1.5px dashed var(--add);pointer-events:none;z-index:4}
+
+.cmp{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,620px),1fr));gap:28px}
+.cmp figure{margin:0;display:flex;flex-direction:column;gap:10px;min-width:0}
+.cmp figcaption{display:flex;gap:10px;align-items:baseline;font-size:13px;color:var(--ink-2);flex-wrap:wrap}
+.verdict{font:600 10.5px var(--f-ui);letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:4px}
+.verdict.no{color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent)}
+.verdict.yes{color:var(--add);background:color-mix(in srgb,var(--add) 14%,transparent)}
+.decisions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px 28px;font-size:13.5px;color:var(--ink-2);margin:0;padding:0;list-style:none}
+.decisions li{display:flex;flex-direction:column;gap:3px}
+.decisions b{color:var(--ink);font-weight:600}
+.decisions .ref{font:600 11px var(--f-mono);color:var(--ink-3)}
+
+/* command sheet */
+.sheet{display:flex;flex-direction:column;gap:12px;padding:14px;background:var(--app-panel);font:12.5px/1.45 var(--f-ui);color:var(--ink)}
+.sheet .hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sheet .hd b{font-size:13.5px}
+.chip{font:600 10.5px var(--f-ui);padding:2px 8px;border-radius:10px;white-space:nowrap}
+.chip.ok{color:var(--add);background:color-mix(in srgb,var(--add) 14%,transparent)}
+.chip.stale{color:var(--warn);background:var(--warn-bg)}
+.cmd-block{font:12.5px/1.6 var(--f-mono);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;padding:9px 10px 9px 12px;display:flex;gap:10px;align-items:flex-start}
+.cmd-block code{flex:1;white-space:pre-wrap;word-break:break-word;font:inherit}
+.t-git{color:var(--ink-3)} .t-sub{color:var(--ink);font-weight:500} .t-flag{color:var(--l1)} .t-sha{color:var(--ink-2)} .t-ref{font-weight:500} .t-str{color:var(--l5)} .t-op{color:var(--ink-3)}
+.explain{display:grid;grid-template-columns:max-content 1fr;gap:5px 12px;font-size:12px;margin:0}
+.explain dt{font:11.5px var(--f-mono);white-space:nowrap}
+.explain dd{margin:0;color:var(--ink-2)}
+.prevs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.prev{border:1px solid var(--app-line);border-radius:8px;background:var(--app-bg);padding:8px 10px;display:flex;flex-direction:column;gap:4px}
+.prev svg{width:100%;height:auto;display:block}
+.undo-line{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2);flex-wrap:wrap}
+.undo-line code{font:11.5px var(--f-mono);color:var(--ink);background:var(--app-bg);border:1px solid var(--app-line);padding:2px 6px;border-radius:5px}
+.opts{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:11.5px;color:var(--ink-3)}
+.seg{display:flex;border:1px solid var(--app-line);border-radius:6px;overflow:hidden}
+.seg span{padding:3px 8px;color:var(--ink-2)}
+.seg span.on{background:var(--app-raise);color:var(--ink);font-weight:600}
+.tog{display:inline-flex;align-items:center;gap:6px}
+.tog i{width:22px;height:12px;border-radius:6px;background:var(--app-line);position:relative;flex:none}
+.tog i.on{background:var(--accent)}
+.tog i::after{content:"";position:absolute;top:2px;left:2px;width:8px;height:8px;border-radius:50%;background:var(--app-raise)}
+.tog i.on::after{left:12px}
+.why{font-size:12px;color:var(--ink-2);border-top:1px solid var(--app-line);padding-top:10px}
+.why b{color:var(--ink)}
+.split{display:grid;grid-template-columns:minmax(0,1fr) 420px}
+.split>.sheet{border-left:1px solid var(--app-line)}
+.cmdbar{display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--app-line);background:var(--app-panel);flex-wrap:wrap}
+.cmdbar code{font:12px var(--f-mono)}
+.cmdbar .sp{margin-left:auto;display:flex;gap:6px}
+.suggest{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--warn-bg);border-bottom:1px solid color-mix(in srgb,var(--warn) 35%,transparent);flex-wrap:wrap}
+.suggest .st{color:var(--warn);font-weight:600;display:flex;gap:6px;align-items:center}
+.suggest .sp{margin-left:auto}
+.cmdrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cmdrow code{font:11.5px var(--f-mono);background:var(--app-bg);border:1px solid var(--app-line);border-radius:5px;padding:3px 7px;color:var(--ink)}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -289,6 +369,9 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
     <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
     <symbol id="i-pencil" viewBox="0 0 16 16"><path d="M10.5 2.5l3 3-8 8h-3v-3z"/></symbol>
     <symbol id="i-cmd" viewBox="0 0 16 16"><path d="M5.5 5.5h5v5h-5z"/><path d="M5.5 5.5H4a1.5 1.5 0 1 1 1.5-1.5zM10.5 5.5V4a1.5 1.5 0 1 1 1.5 1.5zM10.5 10.5H12a1.5 1.5 0 1 1-1.5 1.5zM5.5 10.5V12A1.5 1.5 0 1 1 4 10.5z"/></symbol>
+    <symbol id="i-term" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M4.5 6l2 2-2 2M8.5 10.5h3"/></symbol>
+    <symbol id="i-clip" viewBox="0 0 16 16"><rect x="3.5" y="3" width="9" height="11" rx="1"/><path d="M6 3V2h4v1"/><path d="M6 7.5h4M6 10h3"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 16 16"><path d="M8 2l6 3-6 3-6-3z"/><path d="M2 8l6 3 6-3M2 11l6 3 6-3"/></symbol>
   </defs>
 </svg>
 
@@ -297,9 +380,9 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
 <header class="top">
   <div class="masthead">
     <div class="id">
-      <span class="eyebrow">Creatiwity Incubator · planche design v0.1</span>
+      <span class="eyebrow">Creatiwity Incubator · planche design v0.2 · open source</span>
       <h1>Ramure</h1>
-      <p class="lede">Client git de bureau (Tauri · Rust · Vue) centré sur le commit graph : recherche instantanée, gestes par drag &amp; drop et menu contextuel, rebase interactif visuel, annulation de toute opération.</p>
+      <p class="lede">Viewer git de bureau (Tauri · Rust · Vue) centré sur un commit graph très lisible. Les gestes (glisser, menu, palette) produisent des commandes git natives à coller dans votre terminal. Ramure ne modifie jamais le dépôt.</p>
     </div>
     <div class="stack" style="gap:8px;align-items:flex-start">
       <span class="eyebrow">Thème des maquettes</span>
@@ -310,12 +393,12 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
       </div>
     </div>
   </div>
-  <div class="meta"><span>Dépôt d'exemple : <b>sherpa</b></span><span>Ligne : <b>28 px</b> (compact 22 px)</span><span>Lanes : <b>16 px</b></span><span>Spec : <b>spec-ramure.md</b></span></div>
+  <div class="meta"><span>Dépôt d'exemple : <b>sherpa</b></span><span>Ligne : <b>28 px</b> (compact 22 px)</span><span>Lanes : <b>16 px</b></span><span>Spec : <b>spec-ramure.md</b> · Lisibilité : <b>ux-graph.md</b></span></div>
   <div class="principles">
-    <div><h3>Le graph est l'écran</h3><p>On ouvre un dépôt, on voit le graph. Aucun tableau de bord intermédiaire.</p></div>
-    <div><h3>Dire ce qui va se passer</h3><p>Chaque geste annonce la commande exacte avant de l'exécuter.</p></div>
-    <div><h3>Tout est réversible</h3><p><kbd>⌘Z</kbd> annule reset, rebase, merge, suppression. On confirme seulement l'irréversible.</p></div>
-    <div><h3>Clavier d'abord</h3><p>Chaque entrée de menu existe aussi dans la palette <kbd>⌘K</kbd>.</p></div>
+    <div><h3>Le graph est l'écran</h3><p>Refs, graph, messages : trois lectures séparées, messages tous alignés.</p></div>
+    <div><h3>Dire ce qui va se passer</h3><p>Chaque geste aboutit à une commande expliquée, avec l'aperçu du résultat.</p></div>
+    <div><h3>Toujours une sortie</h3><p>Chaque commande est livrée avec sa commande d'annulation, en sha explicites.</p></div>
+    <div><h3>Git natif, rien d'autre</h3><p>Pas de service externe, pas de réseau, pas de profil : on lit la config git.</p></div>
   </div>
 </header>
 
@@ -323,34 +406,29 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
 <section class="plate" id="fenetre">
   <div class="plate-head">
     <div class="t"><span class="letter">A</span><h2>Fenêtre principale</h2></div>
-    <p>Barre latérale des refs, graph virtualisé (lanes en canvas, texte en DOM), panneau de détails du commit sélectionné. La branche courante porte la pastille pleine.</p>
+    <p>Refs à gauche, alignées contre le graph et reliées à leur nœud ; messages alignés sur un même bord. Couleur « focus » : seules la branche courante et sa base sont vives. Minimap à droite.</p>
   </div>
   <div class="scroll">
-    <div class="win" style="min-width:1120px">
+    <div class="win" style="min-width:1180px">
       <div class="tb">
         <div class="lights"><i></i><i></i><i></i></div>
         <div class="crumb"><svg class="i"><use href="#i-folder"/></svg>sherpa <span class="br"><svg class="i"><use href="#i-branch"/></svg>feature/scoring</span></div>
         <span class="sep"></span>
-        <div class="tbtn"><svg class="i"><use href="#i-undo"/></svg>Annuler</div>
-        <div class="tbtn"><svg class="i"><use href="#i-redo"/></svg>Rétablir</div>
+        <div class="idchip" title="Identité effective, lue dans la config git"><span class="av" style="background:var(--l3);margin:0">JB</span>dev@creatiwity.net <span class="o">~/.gitconfig-creatiwity</span></div>
         <span class="sep"></span>
-        <div class="tbtn"><svg class="i"><use href="#i-down"/></svg>Fetch</div>
-        <div class="tbtn"><svg class="i"><use href="#i-pull"/></svg>Pull</div>
-        <div class="tbtn"><svg class="i"><use href="#i-push"/></svg>Push <span class="badge">↑1</span></div>
-        <span class="sep"></span>
-        <div class="tbtn"><svg class="i"><use href="#i-branch"/></svg>Branche</div>
-        <div class="tbtn"><svg class="i"><use href="#i-stash"/></svg>Stash</div>
+        <div class="tbtn"><svg class="i"><use href="#i-clip"/></svg>Fetch</div>
+        <div class="tbtn"><svg class="i"><use href="#i-term"/></svg>Commandes <span class="badge">2</span></div>
         <div class="search"><svg class="i"><use href="#i-search"/></svg><span class="q">Rechercher commits, refs, auteurs</span><kbd>⌘F</kbd></div>
         <div class="tbtn" style="min-width:auto"><svg class="i"><use href="#i-cmd"/></svg>⌘K</div>
       </div>
-      <div class="body3">
+      <div class="body3" style="grid-template-columns:200px 1fr 290px">
         <aside class="side">
           <div class="filter"><svg class="i"><use href="#i-search"/></svg>Filtrer les refs</div>
           <div class="sgroup">
             <div class="h">Local <span>3</span></div>
             <div class="sitem cur"><span class="dot" style="background:var(--l3)"></span>feature/scoring<span class="ab"><b>↑1</b></span></div>
             <div class="sitem"><span class="dot" style="background:var(--l0)"></span>main<span class="ab">à jour</span></div>
-            <div class="sitem"><span class="dot" style="background:var(--l4)"></span>feature/onboarding<span class="ab">mergée</span></div>
+            <div class="sitem"><span class="dot" style="background:var(--m4)"></span>feature/onboarding<span class="ab">mergée</span></div>
           </div>
           <div class="sgroup">
             <div class="h">origin <span>4</span></div>
@@ -391,28 +469,54 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
             <div class="file"><span class="st A">A</span><span class="p"><i>tests/scoring/</i>urgency.spec.ts</span><span class="num"><span class="a">+58</span></span></div>
           </div>
           <div class="dsec" style="margin-top:auto;border-bottom:0;border-top:1px solid var(--app-line)">
-            <div class="btnrow"><span class="b"><svg class="i"><use href="#i-cherry"/></svg>Cherry-pick</span><span class="b"><svg class="i"><use href="#i-revert"/></svg>Revert</span><span class="b quiet">Plus…</span></div>
+            <div class="btnrow"><span class="b"><svg class="i"><use href="#i-cherry"/></svg>Cherry-pick…</span><span class="b"><svg class="i"><use href="#i-revert"/></svg>Revert…</span><span class="b quiet">Plus…</span></div>
           </div>
         </aside>
       </div>
-      <div class="statusbar"><span>16 commits chargés sur 16</span><span>Graph calculé en 3 ms</span><span class="r">git 2.46 · gix</span></div>
+      <div class="statusbar"><span>16 commits chargés sur 16</span><span>Graph calculé en 3 ms</span><span>Couleurs : focus</span><span class="r">Lecture seule · git 2.46 · gix</span></div>
     </div>
   </div>
   <div class="notes">
-    <ul><li>La ligne WIP est toujours en tête, nœud en pointillé relié à <span class="mono">HEAD</span>.</li><li>Une branche locale et sa distante au même commit partagent une pastille (ordinateur + nuage).</li></ul>
-    <ul><li>La couleur suit la <em>branche</em>, pas la colonne : <span class="mono">feature/scoring</span> reste ambre même si sa colonne change.</li><li>Les commits de merge ont un nœud réduit, le texte en gris secondaire.</li></ul>
-    <ul><li>Colonnes redimensionnables et masquables ; en fenêtre étroite, auteur et sha se replient dans l'infobulle.</li><li>Double-clic sur une ref = checkout. Clic sur un parent = saut.</li></ul>
+    <ul><li>Une seule pastille par ligne, les autres en <span class="mono">+N</span>. Locale et distante au même commit fusionnent (ordinateur + nuage).</li><li>Le trait de liaison part de la pastille et rejoint le nœud dans la couleur de la branche.</li></ul>
+    <ul><li>Conventional Commits détectés : type en sous-colonne grise, portée en gris, le sujet commence toujours au même x.</li><li>Merges en forme courte : <span class="mono">⤙ fix/pwa-cache #142</span>.</li></ul>
+    <ul><li>Date affichée seulement quand elle change ; auteur répété atténué ; sha masqué (dans les détails et les commandes).</li><li>La pastille d'identité montre l'e-mail effectif et le fichier de config d'où il vient.</li></ul>
   </div>
 </section>
 
-<!-- B: search -->
+<!-- B: readability comparison -->
+<section class="plate" id="lisibilite">
+  <div class="plate-head">
+    <div class="t"><span class="letter">B</span><h2>Lisibilité : v0.1 contre v0.2</h2></div>
+    <p>Mêmes 10 commits. Les repères rouges marquent le début de chaque message en v0.1 ; la ligne verte montre le bord unique en v0.2. Détail des principes et sources dans <span class="mono">ux-graph.md</span>.</p>
+  </div>
+  <div class="cmp">
+    <figure>
+      <figcaption><span class="verdict no">v0.1</span>Refs dans la colonne message, toutes les branches colorées</figcaption>
+      <div class="scroll"><div class="win" style="min-width:620px"><div class="graph" id="g-before"></div></div></div>
+    </figure>
+    <figure>
+      <figcaption><span class="verdict yes">v0.2</span>Refs · graph · texte, couleur focus, type et date allégés</figcaption>
+      <div class="scroll"><div class="win" style="min-width:620px"><div class="graph" id="g-after"></div></div></div>
+    </figure>
+  </div>
+  <ul class="decisions">
+    <li><span class="ref">D1</span><b>Messages alignés</b>Le graph sépare le « où » (refs) du « quoi » (messages). L'œil balaie un bord gauche unique (F-pattern).</li>
+    <li><span class="ref">D1</span><b>Pastille près de son nœud</b>Alignée à droite et reliée par un trait (proximité, continuité).</li>
+    <li><span class="ref">D2</span><b>Graph de largeur constante</b>Calculée sur tout l'historique : le bord des messages ne bouge pas au défilement.</li>
+    <li><span class="ref">D4</span><b>Couleur focus</b>Vives : ma branche et sa base. Les autres désaturées, arc-en-ciel en option.</li>
+    <li><span class="ref">D5</span><b>Premiers mots porteurs de sens</b>Type en sous-colonne, merges raccourcis et atténués.</li>
+    <li><span class="ref">D6</span><b>Moins d'encre répétée</b>Date seulement au changement de jour, sha masqué, auteur répété atténué.</li>
+  </ul>
+</section>
+
+<!-- C: search -->
 <section class="plate" id="recherche">
   <div class="plate-head">
-    <div class="t"><span class="letter">B</span><h2>Recherche au fil de la frappe</h2></div>
-    <p>Mode « surligner » : le graph reste intact, les commits hors résultats s'estompent, <kbd>↵</kbd> / <kbd>⇧↵</kbd> passe d'un résultat à l'autre. Le compteur affiche la durée pour que la performance reste visible.</p>
+    <div class="t"><span class="letter">C</span><h2>Recherche au fil de la frappe</h2></div>
+    <p>Mode « surligner » : le graph reste intact, les commits hors résultats s'estompent, <kbd>↵</kbd> / <kbd>⇧↵</kbd> passe d'un résultat à l'autre et la minimap marque les résultats sur tout l'historique.</p>
   </div>
   <div class="scroll">
-    <div class="win" style="min-width:820px">
+    <div class="win" style="min-width:900px">
       <div class="tb" style="gap:10px">
         <div class="search on" style="margin-left:0;flex:1"><svg class="i"><use href="#i-search"/></svg><span class="q">pwa cache<span class="caret"></span></span><span class="mono" style="font-size:11px;color:var(--ink-3)">4 résultats · 2 ms</span></div>
         <div class="theme-switch" style="padding:2px"><button type="button" tabindex="-1" aria-pressed="true" style="padding:4px 9px">Surligner</button><button type="button" tabindex="-1" aria-pressed="false" style="padding:4px 9px">Filtrer</button></div>
@@ -428,79 +532,63 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
   </div>
 </section>
 
-<!-- C + E -->
-<div class="grid2">
-  <section class="plate" id="palette">
-    <div class="plate-head">
-      <div class="t"><span class="letter">C</span><h2>Palette de commandes</h2></div>
-      <p>Même moteur flou que la recherche, étendu aux actions, branches, tags et fichiers. Les actions indisponibles restent visibles, grisées, avec la raison.</p>
-    </div>
-    <div class="canvas-pad">
-      <div class="palette">
-        <div class="in"><svg class="i" style="width:16px;height:16px;stroke:var(--ink-3);fill:none;stroke-width:1.6"><use href="#i-search"/></svg><span>reb<span class="caret" style="display:inline-block;width:1px;height:16px;background:var(--accent);vertical-align:-3px"></span></span><span class="scope">Tout</span></div>
-        <div class="res">
-          <div class="mlabel">Actions</div>
-          <div class="mi hot"><svg class="i" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.6"><use href="#i-rebase"/></svg><span class="two"><span><b>Reb</b>ase feature/scoring sur main</span><span class="cmd">git rebase main</span></span><span class="k">↵</span></div>
-          <div class="mi"><svg class="i" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.6"><use href="#i-rebase"/></svg><span><b>Reb</b>ase interactif depuis…</span><span class="k">⌘⇧I</span></div>
-          <div class="mi dis"><svg class="i" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.6"><use href="#i-x"/></svg><span class="two"><span>Abandonner le <b>reb</b>ase</span><span class="cmd">aucun rebase en cours</span></span></div>
-          <div class="msep"></div>
-          <div class="mlabel">Branches</div>
-          <div class="mi"><span class="pill" style="--c:var(--l6)"><svg class="i"><use href="#i-laptop"/></svg>feature/<b>reb</b>uild-index</span><span class="k">checkout ↵</span></div>
-          <div class="msep"></div>
-          <div class="mlabel">Commits</div>
-          <div class="mi"><span class="mono" style="color:var(--ink-3);font-size:11px">3be0a71</span><span style="overflow:hidden;text-overflow:ellipsis">docs: <b>re</b>mplace le <b>b</b>adge de build</span></div>
-        </div>
-        <div class="foot"><span><kbd>↑</kbd><kbd>↓</kbd> naviguer</span><span><kbd>↵</kbd> exécuter</span><span><kbd>⇥</kbd> changer de portée</span><span><kbd>esc</kbd> fermer</span></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="plate" id="menu">
-    <div class="plate-head">
-      <div class="t"><span class="letter">E</span><h2>Menu contextuel d'un commit</h2></div>
-      <p>Groupes stables (naviguer · créer · appliquer · déplacer · copier), raccourci affiché à droite. Les actions destructrices sont en rouge et dans un sous-menu.</p>
-    </div>
-    <div class="canvas-pad" style="gap:16px">
-      <div class="menu">
-        <div class="mi"><svg class="i"><use href="#i-check"/></svg>Checkout d88e1b4<span class="k">⌥↵</span></div>
-        <div class="mi"><svg class="i"><use href="#i-branch"/></svg>Créer une branche ici<span class="k">⌘B</span></div>
-        <div class="mi"><svg class="i"><use href="#i-tag"/></svg>Créer un tag ici<span class="k">⌘T</span></div>
-        <div class="msep"></div>
-        <div class="mi"><svg class="i"><use href="#i-cherry"/></svg>Cherry-pick sur feature/scoring</div>
-        <div class="mi"><svg class="i"><use href="#i-revert"/></svg>Revert</div>
-        <div class="mi"><svg class="i"><use href="#i-pencil"/></svg>Créer un commit fixup! pour celui-ci</div>
-        <div class="msep"></div>
-        <div class="mi"><svg class="i"><use href="#i-rebase"/></svg>Rebase interactif depuis ici<span class="k">⌘⇧I</span></div>
-        <div class="mi hot"><svg class="i"><use href="#i-reset"/></svg>Reset feature/scoring ici<svg class="i chev"><use href="#i-chev"/></svg></div>
-        <div class="msep"></div>
-        <div class="mi"><svg class="i"><use href="#i-copy"/></svg>Copier le sha<span class="k">⌘C</span></div>
-        <div class="mi"><svg class="i"><use href="#i-copy"/></svg>Copier le message</div>
-        <div class="mi"><svg class="i"><use href="#i-search"/></svg>Comparer avec l'arbre de travail</div>
-      </div>
-      <div class="menu" style="max-width:240px;align-self:center">
-        <div class="mi"><span class="two"><span>Soft</span><span class="cmd">garde index et fichiers</span></span></div>
-        <div class="mi hot"><span class="two"><span>Mixed</span><span class="cmd">garde les fichiers</span></span><span class="k">défaut</span></div>
-        <div class="mi danger"><span class="two"><span>Hard…</span><span class="cmd">perd 3 fichiers modifiés</span></span></div>
-      </div>
-    </div>
-  </section>
-</div>
-
-<!-- D: DnD -->
-<section class="plate" id="dnd">
+<!-- D: stacked branch + command sheet -->
+<section class="plate" id="onto">
   <div class="plate-head">
-    <div class="t"><span class="letter">D</span><h2>Drag &amp; drop</h2></div>
-    <p>On attrape une pastille de ref, les cibles valides s'éclairent et l'action par défaut s'écrit sous le curseur. Au dépôt, un menu court classe les actions de la plus probable à la plus rare, avec la commande git équivalente.</p>
+    <div class="t"><span class="letter">D</span><h2>Branche empilée et fiche de commande</h2></div>
+    <p><span class="mono">develop</span> a été rebasée sur <span class="mono">main</span> ; <span class="mono">feat/a</span> repose encore sur les anciens commits (en pointillé). Ramure le détecte et prépare <span class="mono">git rebase --onto</span>. La fiche de commande est le composant commun à toutes les actions.</p>
   </div>
   <div class="scroll">
-    <div class="win" style="min-width:880px">
+    <div class="win" style="min-width:1100px">
+      <div class="suggest"><span class="st"><svg class="i"><use href="#i-warn"/></svg>feat/a repose sur 2 commits réécrits de develop</span><span style="color:var(--ink-2)">Un <span class="mono">git rebase develop</span> les rejouerait.</span><span class="sp b primary">Préparer le rebase --onto</span></div>
+      <div class="split">
+        <div class="graph" id="g-onto"></div>
+        <div class="sheet">
+          <div class="hd"><svg class="i"><use href="#i-rebase"/></svg><b>Rebase feat/a sur develop</b><span class="chip ok">Prête</span></div>
+          <div class="cmd-block"><code id="cmd-onto"></code><span class="b primary" style="height:24px">Copier <kbd style="background:transparent;color:inherit;border-color:currentColor">↵</kbd></span></div>
+          <dl class="explain">
+            <dt><span class="t-flag">--onto</span> <span class="t-ref" style="color:var(--l1)">develop</span></dt><dd>nouvelle base : develop actuel, <span class="mono">9c2e7f1</span></dd>
+            <dt><span class="t-ref" style="color:var(--l3)">feat/a</span><span class="t-op">~3</span></dt><dd>exclut tout ce qui est sous les 3 commits propres de feat/a (l'ancien develop)</dd>
+            <dt><span class="t-ref" style="color:var(--l3)">feat/a</span></dt><dd>branche déplacée (actuellement checkoutée)</dd>
+          </dl>
+          <div class="prevs">
+            <div class="prev"><span class="eyebrow" style="font-size:10px">Avant</span><svg viewBox="0 0 160 124" aria-hidden="true" id="pv-before"></svg></div>
+            <div class="prev"><span class="eyebrow" style="font-size:10px">Après</span><svg viewBox="0 0 160 124" aria-hidden="true" id="pv-after"></svg></div>
+          </div>
+          <div class="undo-line"><svg class="i"><use href="#i-undo"/></svg>Pour annuler : <code>git reset --keep 7a1e0c4</code><svg class="i" style="color:var(--ink-3)"><use href="#i-copy"/></svg></div>
+          <div class="opts">
+            <span class="seg"><span class="on">zsh</span><span>fish</span><span>PowerShell</span></span>
+            <span class="tog"><i></i>git -C</span>
+            <span class="tog"><i></i>sha explicites</span>
+          </div>
+          <p class="why"><b>Pourquoi pas <span class="mono">git rebase develop</span> ?</b> Les 2 anciens commits de develop seraient rejoués sur leur nouvelle version. S'ils ont été modifiés pendant le rebase de develop, cela produit des conflits sans raison.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <ul><li>Détection : reflog de la base (<span class="mono">merge-base --fork-point</span>) croisé avec l'équivalence de patchs (<span class="mono">git cherry</span>).</li><li>Les anciens commits restent affichés en pointillé, avec le sha de leur nouvelle version.</li></ul>
+    <ul><li>Geste manuel : sélectionner une plage (clic puis <kbd>⇧</kbd>clic) et la glisser sur la nouvelle base.</li><li>Pile <span class="mono">feat/a ← feat/b</span> : Ramure propose <span class="mono">--update-refs</span> pour tout déplacer d'un coup.</li></ul>
+    <ul><li>Quand la commande est exécutée, le watcher la détecte et affiche l'annulation (planche I).</li><li>Si une ref bouge avant l'exécution, la fiche passe « périmée » et propose de régénérer.</li></ul>
+  </div>
+</section>
+
+<!-- E: DnD -->
+<section class="plate" id="dnd">
+  <div class="plate-head">
+    <div class="t"><span class="letter">E</span><h2>Drag &amp; drop</h2></div>
+    <p>On attrape une pastille, les cibles valides s'éclairent et l'action par défaut s'écrit sous le curseur. Au lâcher, le menu classe les actions et affiche la commande ; choisir une action ouvre sa fiche, <kbd>↵</kbd> copie directement.</p>
+  </div>
+  <div class="scroll">
+    <div class="win" style="min-width:980px">
       <div class="graph stage" id="g-dnd" style="padding-bottom:12px"></div>
+      <div class="cmdbar"><svg class="i"><use href="#i-term"/></svg><code><span class="t-git">git</span> <span class="t-sub">rebase</span> <span class="t-ref" style="color:var(--l0)">main</span></code><span style="color:var(--ink-3);font-size:11.5px">Annuler ensuite : <span class="mono">git reset --keep a41c9e2</span></span><span class="sp"><span class="b quiet">Détails</span><span class="b primary">Copier <kbd style="background:transparent;color:inherit;border-color:currentColor">↵</kbd></span></span></div>
     </div>
   </div>
   <div class="notes">
     <ul><li><b>Branche → branche</b> : rebase, merge dans un sens ou l'autre, fast-forward si possible.</li><li><b>Branche → commit</b> : rebase sur ce commit, reset à ce commit.</li></ul>
-    <ul><li><b>Branche → sa distante</b> : push (force-with-lease si divergente).</li><li><b>Commit(s) → branche</b> : cherry-pick.</li></ul>
-    <ul><li>Si un checkout est nécessaire, le libellé le dit : « Checkout main puis merge… ».</li><li><kbd>esc</kbd> annule le glisser à tout moment.</li></ul>
+    <ul><li><b>Plage de commits → base</b> : <span class="mono">rebase --onto</span>.</li><li><b>Commit(s) → branche</b> : cherry-pick. <b>Branche → sa distante</b> : push force-with-lease si divergente.</li></ul>
+    <ul><li>Si un checkout est nécessaire, la commande l'enchaîne avec <span class="mono">&amp;&amp;</span> et le libellé le dit.</li><li><kbd>esc</kbd> annule le glisser à tout moment.</li></ul>
   </div>
 </section>
 
@@ -508,11 +596,11 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
 <section class="plate" id="rebase">
   <div class="plate-head">
     <div class="t"><span class="letter">F</span><h2>Rebase interactif</h2></div>
-    <p>La todo-list de git, rendue éditable : action par ligne au clavier (<kbd>p</kbd> <kbd>r</kbd> <kbd>e</kbd> <kbd>s</kbd> <kbd>f</kbd> <kbd>d</kbd>), réordonnancement à la poignée ou <kbd>⌥↑</kbd>/<kbd>⌥↓</kbd>, reword en ligne. À droite, l'historique résultant.</p>
+    <p>La todo-list de git, rendue éditable : action par ligne au clavier (<kbd>p</kbd> <kbd>r</kbd> <kbd>e</kbd> <kbd>s</kbd> <kbd>f</kbd> <kbd>d</kbd>), réordonnancement à la poignée ou <kbd>⌥↑</kbd>/<kbd>⌥↓</kbd>, reword en ligne. Le résultat est une seule commande qui applique cette todo sans éditeur.</p>
   </div>
   <div class="scroll">
-    <div class="win" style="min-width:820px">
-      <div class="tb" style="gap:10px"><svg class="i"><use href="#i-rebase"/></svg><b>Rebase interactif</b><span style="color:var(--ink-2)">feature/scoring · 6 commits sur</span><span class="pill" style="--c:var(--l0)"><svg class="i"><use href="#i-laptop"/></svg><svg class="i"><use href="#i-cloud"/></svg>main</span><span class="mono" style="margin-left:auto;font-size:11px;color:var(--ink-3)">git rebase -i --autosquash --update-refs main</span></div>
+    <div class="win" style="min-width:860px">
+      <div class="tb" style="gap:10px"><svg class="i"><use href="#i-rebase"/></svg><b>Rebase interactif</b><span style="color:var(--ink-2)">feature/scoring · 6 commits sur</span><span class="pill" style="--c:var(--l0)"><svg class="i"><use href="#i-laptop"/></svg><svg class="i"><use href="#i-cloud"/></svg>main</span></div>
       <div class="rebase">
         <div class="rb-list">
           <div class="rb"><svg class="i grip"><use href="#i-grip"/></svg><span class="act pick">pick</span><span class="sha">3e1a0b2</span><span class="m"><span class="tx">feat(scoring): ajoute le champ due_at</span></span></div>
@@ -533,20 +621,84 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
           </ol>
           <p class="caption">1 fixup fusionné, 1 commit supprimé.</p>
         </div>
-        <div class="rb-foot">
-          <div class="keys"><span><kbd>p</kbd>pick</span><span><kbd>r</kbd>reword</span><span><kbd>e</kbd>edit</span><span><kbd>s</kbd>squash</span><span><kbd>f</kbd>fixup</span><span><kbd>d</kbd>drop</span><span><kbd>⌥↑↓</kbd>déplacer</span></div>
-          <div class="sp"><span class="b quiet">Annuler <kbd>esc</kbd></span><span class="b primary">Démarrer le rebase <kbd style="background:transparent;color:inherit;border-color:currentColor">⌘↵</kbd></span></div>
+        <div class="rb-foot" style="flex-direction:column;align-items:stretch;gap:10px">
+          <div class="cmd-block"><code><span class="t-git">git</span> <span class="t-flag">-c</span> <span class="t-str">sequence.editor="cp '/tmp/ramure/todo-7f3a'"</span> <span class="t-sub">rebase</span> <span class="t-flag">-i --autosquash</span> <span class="t-ref" style="color:var(--l0)">main</span></code></div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+            <div class="keys"><span><kbd>p</kbd>pick</span><span><kbd>r</kbd>reword</span><span><kbd>e</kbd>edit</span><span><kbd>s</kbd>squash</span><span><kbd>f</kbd>fixup</span><span><kbd>d</kbd>drop</span><span><kbd>⌥↑↓</kbd>déplacer</span></div>
+            <div class="sp"><span class="b quiet">Voir la todo</span><span class="b quiet">Annuler <kbd>esc</kbd></span><span class="b primary">Copier la commande <kbd style="background:transparent;color:inherit;border-color:currentColor">⌘↵</kbd></span></div>
+          </div>
         </div>
       </div>
     </div>
   </div>
+  <p class="caption">git lance l'éditeur de séquence via son propre <span class="mono">sh</span>, y compris sous Windows : <span class="mono">cp</span> remplace la todo par celle préparée ici. Les rewords sont appliqués par des lignes <span class="mono">exec git commit --amend --only -F …</span>. Annulation proposée : <span class="mono">git reset --keep a41c9e2</span>.</p>
 </section>
 
-<!-- G: states -->
+<!-- G + H -->
+<div class="grid2">
+  <section class="plate" id="palette">
+    <div class="plate-head">
+      <div class="t"><span class="letter">G</span><h2>Palette de commandes</h2></div>
+      <p>Même moteur flou que la recherche, étendu aux actions, branches, tags et fichiers. Chaque action montre la commande qu'elle va produire.</p>
+    </div>
+    <div class="canvas-pad">
+      <div class="palette">
+        <div class="in"><svg class="i" style="width:16px;height:16px;color:var(--ink-3)"><use href="#i-search"/></svg><span>reb<span class="caret" style="display:inline-block;width:1px;height:16px;background:var(--accent);vertical-align:-3px"></span></span><span class="scope">Tout</span></div>
+        <div class="res">
+          <div class="mlabel">Actions</div>
+          <div class="mi hot"><svg class="i"><use href="#i-rebase"/></svg><span class="two"><span><b>Reb</b>ase feature/scoring sur main</span><span class="cmd">git rebase main</span></span><span class="k">↵ copier</span></div>
+          <div class="mi"><svg class="i"><use href="#i-rebase"/></svg><span><b>Reb</b>ase interactif depuis…</span><span class="k">⌘⇧I</span></div>
+          <div class="mi"><svg class="i"><use href="#i-layers"/></svg><span><b>Reb</b>ase --onto…</span></div>
+          <div class="mi dis"><svg class="i"><use href="#i-x"/></svg><span class="two"><span>Abandonner le <b>reb</b>ase</span><span class="cmd">aucun rebase en cours</span></span></div>
+          <div class="msep"></div>
+          <div class="mlabel">Branches</div>
+          <div class="mi"><span class="pill" style="--c:var(--m6)"><svg class="i"><use href="#i-laptop"/></svg>feature/<b>reb</b>uild-index</span><span class="k">git switch</span></div>
+          <div class="msep"></div>
+          <div class="mlabel">Commits</div>
+          <div class="mi"><span class="mono" style="color:var(--ink-3);font-size:11px">3be0a71</span><span style="overflow:hidden;text-overflow:ellipsis">docs: <b>re</b>mplace le <b>b</b>adge de build</span></div>
+        </div>
+        <div class="foot"><span><kbd>↑</kbd><kbd>↓</kbd> naviguer</span><span><kbd>↵</kbd> copier</span><span><kbd>⇥</kbd> fiche détaillée</span><span><kbd>esc</kbd> fermer</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="plate" id="menu">
+    <div class="plate-head">
+      <div class="t"><span class="letter">H</span><h2>Menu contextuel d'un commit</h2></div>
+      <p>Groupes stables (naviguer · créer · appliquer · déplacer · copier). Le sous-menu reset montre la commande de chaque variante ; <span class="mono">--keep</span> est proposé par défaut car il refuse de perdre des modifications.</p>
+    </div>
+    <div class="canvas-pad" style="gap:16px">
+      <div class="menu">
+        <div class="mi"><svg class="i"><use href="#i-check"/></svg>Checkout d88e1b4<span class="k">⌥↵</span></div>
+        <div class="mi"><svg class="i"><use href="#i-branch"/></svg>Créer une branche ici<span class="k">⌘B</span></div>
+        <div class="mi"><svg class="i"><use href="#i-tag"/></svg>Créer un tag ici<span class="k">⌘T</span></div>
+        <div class="msep"></div>
+        <div class="mi"><svg class="i"><use href="#i-cherry"/></svg>Cherry-pick sur feature/scoring</div>
+        <div class="mi"><svg class="i"><use href="#i-revert"/></svg>Revert</div>
+        <div class="mi"><svg class="i"><use href="#i-pencil"/></svg>Préparer un commit --fixup</div>
+        <div class="msep"></div>
+        <div class="mi"><svg class="i"><use href="#i-rebase"/></svg>Rebase interactif depuis ici<span class="k">⌘⇧I</span></div>
+        <div class="mi hot"><svg class="i"><use href="#i-reset"/></svg>Reset feature/scoring ici<svg class="i chev"><use href="#i-chev"/></svg></div>
+        <div class="msep"></div>
+        <div class="mi"><svg class="i"><use href="#i-copy"/></svg>Copier le sha<span class="k">⌘C</span></div>
+        <div class="mi"><svg class="i"><use href="#i-copy"/></svg>Copier le message</div>
+        <div class="mi"><svg class="i"><use href="#i-search"/></svg>Comparer avec l'arbre de travail</div>
+      </div>
+      <div class="menu" style="max-width:260px;align-self:center">
+        <div class="mi"><span class="two"><span>Soft</span><span class="cmd">git reset --soft d88e1b4</span></span></div>
+        <div class="mi"><span class="two"><span>Mixed</span><span class="cmd">git reset d88e1b4</span></span></div>
+        <div class="mi hot"><span class="two"><span>Keep</span><span class="cmd">git reset --keep d88e1b4</span></span><span class="k">défaut</span></div>
+        <div class="mi danger"><span class="two"><span>Hard…</span><span class="cmd">perd 3 fichiers modifiés</span></span></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- I: states -->
 <section class="plate" id="etats">
   <div class="plate-head">
-    <div class="t"><span class="letter">G</span><h2>États : conflit, annulation, confirmation</h2></div>
-    <p>Le bandeau d'opération en cours apparaît quel que soit l'outil qui a lancé l'opération, y compris la CLI. Seul ce qui ne peut pas s'annuler demande une confirmation.</p>
+    <div class="t"><span class="letter">I</span><h2>États : opération en cours, exécution détectée, fiche périmée</h2></div>
+    <p>Ramure observe le dépôt : il voit un rebase lancé dans le terminal, propose les commandes pour continuer, et confirme quand une commande générée a été exécutée.</p>
   </div>
   <div class="grid2">
     <div class="win">
@@ -554,34 +706,40 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
         <span class="st"><svg class="i"><use href="#i-warn"/></svg>Rebase en cours</span>
         <span>feature/scoring sur main · étape 3/5</span>
         <span class="progress"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span>
-        <span class="sp"><span class="b" aria-disabled="true">Continuer</span><span class="b">Passer</span><span class="b quiet">Annuler</span></span>
       </div>
       <div style="padding:10px 12px 6px" class="eyebrow">2 fichiers en conflit · 1 résolu</div>
-      <div class="cf"><svg class="i ko"><use href="#i-warn"/></svg><span class="p mono" style="font-size:11.5px">server/scoring/urgency.ts</span><span class="btnrow"><span class="b">Garder la mienne</span><span class="b">Prendre la leur</span><span class="b primary">Outil de merge</span></span></div>
-      <div class="cf"><svg class="i ko"><use href="#i-warn"/></svg><span class="p mono" style="font-size:11.5px">server/scoring/index.ts</span><span class="btnrow"><span class="b">Garder la mienne</span><span class="b">Prendre la leur</span><span class="b">Outil de merge</span></span></div>
-      <div class="cf" style="border-bottom:0"><svg class="i ok"><use href="#i-check"/></svg><span class="p mono" style="font-size:11.5px;color:var(--ink-2)">tests/scoring/urgency.spec.ts</span><span style="color:var(--add);font-size:12px">résolu</span></div>
+      <div class="cf"><svg class="i ko"><use href="#i-warn"/></svg><span class="p mono" style="font-size:11.5px">server/scoring/urgency.ts</span><span class="btnrow"><span class="b">Garder la mienne</span><span class="b">Prendre la leur</span><span class="b quiet">Ouvrir</span></span></div>
+      <div class="cf"><svg class="i ko"><use href="#i-warn"/></svg><span class="p mono" style="font-size:11.5px">server/scoring/index.ts</span><span class="btnrow"><span class="b">Garder la mienne</span><span class="b">Prendre la leur</span><span class="b quiet">Ouvrir</span></span></div>
+      <div class="cf"><svg class="i ok"><use href="#i-check"/></svg><span class="p mono" style="font-size:11.5px;color:var(--ink-2)">tests/scoring/urgency.spec.ts</span><span style="color:var(--add);font-size:12px">résolu</span></div>
+      <div class="cmdbar" style="flex-direction:column;align-items:stretch;gap:8px">
+        <div class="cmdrow"><code>git checkout --theirs -- server/scoring/urgency.ts &amp;&amp; git add server/scoring/urgency.ts</code></div>
+        <div class="cmdrow"><span class="b" aria-disabled="true">git rebase --continue</span><span class="b">git rebase --skip</span><span class="b">git rebase --abort</span><span style="font-size:11.5px;color:var(--ink-3)">clic = copier</span></div>
+      </div>
     </div>
     <div class="stack">
-      <div class="toast"><svg class="i" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.6"><use href="#i-check"/></svg><span>Reset de main annulé. main pointe de nouveau sur <span class="mono">9f03b7d</span>.</span><span class="undo">Rétablir <kbd>⌘⇧Z</kbd></span></div>
-      <div class="dialog" role="dialog" aria-label="Confirmation de reset hard">
-        <h4>Reset hard de feature/scoring vers d88e1b4 ?</h4>
-        <p>3 fichiers modifiés non commités seront perdus. Ramure peut restaurer la branche avec <kbd>⌘Z</kbd>, mais pas ces modifications.</p>
-        <p><code>git reset --hard d88e1b4</code></p>
-        <div class="btnrow"><span class="b">Stasher puis reset</span><span class="b quiet">Annuler</span><span class="b danger">Reset hard</span></div>
+      <div class="toast"><svg class="i" style="width:15px;height:15px"><use href="#i-check"/></svg><span>Commande exécutée : feat/a repose maintenant sur develop (3 commits).</span><span class="undo">Copier l'annulation <kbd>⌘Z</kbd></span></div>
+      <div class="win">
+        <div class="sheet">
+          <div class="hd"><svg class="i"><use href="#i-reset"/></svg><b>Reset hard de feature/scoring vers d88e1b4</b><span class="chip stale">Périmée</span></div>
+          <p style="color:var(--ink-2)">feature/scoring a bougé depuis la génération (<span class="mono">a41c9e2 → 5c02e9b</span>). La commande et son annulation doivent être recalculées.</p>
+          <div class="cmd-block" style="opacity:.55"><code><span class="t-git">git</span> <span class="t-sub">reset</span> <span class="t-flag">--hard</span> <span class="t-sha">d88e1b4</span></code></div>
+          <p style="color:var(--danger);font-size:12px">3 fichiers modifiés non commités seraient perdus : ce n'est pas annulable. Préférez <span class="mono">git stash -u</span> avant.</p>
+          <div class="btnrow" style="justify-content:flex-end"><span class="b quiet">Fermer</span><span class="b primary">Régénérer</span></div>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- H: tokens -->
+<!-- J: tokens -->
 <section class="plate" id="tokens">
   <div class="plate-head">
-    <div class="t"><span class="letter">H</span><h2>Fondations</h2></div>
-    <p>Neutres légèrement bleutés, un seul accent d'interface (sélection, focus, action primaire), huit couleurs de lanes réglées pour rester distinctes en deutéranopie et lisibles sur les deux fonds.</p>
+    <div class="t"><span class="letter">J</span><h2>Fondations</h2></div>
+    <p>Neutres légèrement bleutés, un seul accent d'interface, huit couleurs de lanes et leurs versions désaturées pour le mode focus, une coloration dédiée aux commandes.</p>
   </div>
   <div class="tok">
     <div class="stack">
-      <h3>Lanes</h3>
+      <h3>Lanes, vives et désaturées</h3>
       <div class="sw" id="sw-lanes"></div>
       <h3>Interface</h3>
       <div class="sw">
@@ -598,23 +756,25 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
     <div class="stack">
       <h3>Typographie</h3>
       <div class="typespec">
-        <div><code>UI 12.5/1.3</code><span style="font:12.5px var(--f-ui)">Instrument Sans : libellés, messages de commit, menus.</span></div>
+        <div><code>UI 12.5/1.3</code><span style="font:12.5px var(--f-ui)">Instrument Sans : messages, libellés, menus.</span></div>
         <div><code>UI 600 13.5</code><span style="font:600 13.5px var(--f-ui)">Titre de commit dans les détails</span></div>
         <div><code>Label 10.5 caps</code><span style="font:600 10.5px var(--f-ui);letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)">Local · origin · Tags</span></div>
-        <div><code>Mono 11.5</code><span style="font:11.5px var(--f-mono)">a41c9e2 · git rebase -i main</span></div>
-        <div><code>Display 700</code><span style="font:700 22px var(--f-display)">Bricolage Grotesque</span></div>
+        <div><code>Mono 11.5</code><span style="font:11.5px var(--f-mono)">a41c9e2 · feat · fix</span></div>
+        <div><code>Commande</code><span style="font:12.5px var(--f-mono)"><span class="t-git">git</span> <span class="t-sub">rebase</span> <span class="t-flag">--onto</span> <span class="t-ref" style="color:var(--l1)">develop</span> <span class="t-ref" style="color:var(--l3)">feat/a</span><span class="t-op">~3</span></span></div>
       </div>
-      <p class="caption">Display réservé aux écrans vides et à l'accueil. L'app elle-même reste en Instrument Sans + JetBrains Mono.</p>
+      <p class="caption">Dans une commande, chaque ref prend la couleur de sa branche : on relie le texte au graph sans lire.</p>
     </div>
     <div class="stack">
-      <h3>Pastilles de refs</h3>
+      <h3>Pastilles et marqueurs</h3>
       <div class="pills">
         <figure><span class="pill head" style="--c:var(--l3)"><svg class="i"><use href="#i-check"/></svg>feature/scoring</span>HEAD</figure>
-        <figure><span class="pill" style="--c:var(--l4)"><svg class="i"><use href="#i-laptop"/></svg>feature/onboarding</span>Locale</figure>
-        <figure><span class="pill" style="--c:var(--l2)"><svg class="i"><use href="#i-cloud"/></svg>origin/fix/pwa-cache</span>Distante</figure>
+        <figure><span class="pill" style="--c:var(--m4)"><svg class="i"><use href="#i-laptop"/></svg>feature/onboarding</span>Locale (désaturée)</figure>
+        <figure><span class="pill" style="--c:var(--m2)"><svg class="i"><use href="#i-cloud"/></svg>origin/fix/pwa-cache</span>Distante</figure>
         <figure><span class="pill" style="--c:var(--l0)"><svg class="i"><use href="#i-laptop"/></svg><svg class="i"><use href="#i-cloud"/></svg>main</span>Locale = distante</figure>
         <figure><span class="pill tag" style="--c:var(--l0)"><svg class="i"><use href="#i-tag"/></svg>v0.4.0</span>Tag</figure>
         <figure><span class="pill" style="--c:var(--lx)"><svg class="i"><use href="#i-box"/></svg>stash@{0}</span>Stash</figure>
+        <figure><span class="warnchip"><svg class="i"><use href="#i-warn"/></svg>base réécrite</span>Alerte de pile</figure>
+        <figure><span class="ghostnote" style="margin:0">ancienne version</span>Commit réécrit</figure>
       </div>
       <h3>Nœuds</h3>
       <div class="nodes" id="nodes"></div>
@@ -622,12 +782,11 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
   </div>
 </section>
 
-<footer><span>Ramure · planche design v0.1 · septembre 2026</span><span>Référence fonctionnelle : spec-ramure.md (identifiants F-xx)</span><span>Données d'exemple fictives inspirées du projet sherpa</span></footer>
+<footer><span>Ramure · planche design v0.2 · septembre 2026 · MIT OR Apache-2.0</span><span>Références : spec-ramure.md (F-xx), ux-graph.md (D1–D8)</span><span>Données d'exemple fictives inspirées du projet sherpa</span></footer>
 </div>
 
 <script>
 (function(){
-  // ---- theme switch (applies to the whole board, mockups follow tokens)
   var btns = document.querySelectorAll('.theme-switch button[data-th]');
   function setTheme(v){
     if(v) document.documentElement.setAttribute('data-theme', v); else document.documentElement.removeAttribute('data-theme');
@@ -637,46 +796,72 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
   btns.forEach(function(b){ b.addEventListener('click', function(){ setTheme(b.dataset.th); }); });
   try{ var saved = localStorage.getItem('ramure-board-theme'); if(saved) setTheme(saved); }catch(e){}
 
-  // ---- sample history (newest first). c = colour token, lane = column
   var ic = function(id){ return '<svg class="i"><use href="#i-'+id+'"/></svg>'; };
-  var R = [
-    {wip:1, lane:0, c:'l3', msg:'3 fichiers modifiés · 1 indexé', p:[1]},
-    {lane:0, c:'l3', sha:'a41c9e2', msg:'feat(scoring): pondère les tâches en retard', who:'Julien B.', when:'il y a 12 min', refs:[['head','feature/scoring']], p:[3]},
-    {lane:1, c:'l0', sha:'9f03b7d', msg:'fix(api): gère le 404 sur /tasks/:id', who:'Camille R.', when:'il y a 2 h', refs:[['both','main']], p:[4]},
-    {lane:0, c:'l3', sha:'e27d410', msg:'refactor(scoring): extrait computeUrgency()', who:'Julien B.', when:'hier', refs:[['remote','origin/feature/scoring']], p:[8]},
-    {lane:1, c:'l0', sha:'5b8a0c1', msg:'Merge pull request #142 from fix/pwa-cache', who:'Camille R.', when:'hier', merge:1, p:[5,6]},
-    {lane:1, c:'l0', sha:'c3d9e58', msg:'chore(deps): passe à nuxt 4.1.2', who:'Sam T.', when:'21 sept.', p:[8]},
-    {lane:2, c:'l2', sha:'71fe2aa', msg:'fix(pwa): invalide le cache au changement de version', who:'Léa M.', when:'21 sept.', refs:[['remote','origin/fix/pwa-cache']], p:[7]},
-    {lane:2, c:'l2', sha:'0ad6f93', msg:'test(pwa): couvre la mise à jour du service worker', who:'Léa M.', when:'20 sept.', p:[8]},
-    {lane:1, c:'l0', sha:'d88e1b4', msg:'feat(tasks): vue « une tâche à la fois »', who:'Sam T.', when:'18 sept.', refs:[['tag','v0.4.0']], p:[10]},
-    {lane:2, c:'lx', stash:1, sha:'stash@{0}', msg:'On main: essai layout mobile', who:'Camille R.', when:'17 sept.', p:[10]},
-    {lane:1, c:'l0', sha:'46a2c7b', msg:"Merge branch 'feature/onboarding'", who:'Sam T.', when:'16 sept.', merge:1, p:[11,12]},
-    {lane:1, c:'l0', sha:'b19e3f0', msg:'fix(auth): expire la session après 30 j', who:'Camille R.', when:'15 sept.', p:[14]},
-    {lane:2, c:'l4', sha:'8e07d25', msg:'feat(onboarding): écran de bienvenue', who:'Léa M.', when:'14 sept.', refs:[['local','feature/onboarding']], p:[13]},
-    {lane:2, c:'l4', sha:'f5c81a9', msg:'feat(onboarding): choix des catégories', who:'Léa M.', when:'12 sept.', p:[14]},
-    {lane:1, c:'l0', sha:'2d6b94e', msg:'feat(pwa): installation hors ligne', who:'Sam T.', when:'9 sept.', refs:[['tag','v0.3.0']], p:[15]},
-    {lane:1, c:'l0', sha:'0c1f7a3', msg:'chore: initialise le projet Nuxt 4', who:'Sam T.', when:'2 sept.', p:[]}
-  ];
-  var RH = 28, LW = 16, X0 = 14;
-
-  function pill(t, name, c){
-    var icons = t==='remote' ? ic('cloud') : t==='tag' ? ic('tag') : t==='both' ? ic('laptop')+ic('cloud') : t==='head' ? ic('check') : ic('laptop');
-    return '<span class="pill'+(t==='head'?' head':'')+(t==='tag'?' tag':'')+'" style="--c:var(--'+c+')">'+icons+esc(name)+'</span>';
-  }
   function esc(s){ return String(s).replace(/[&<>"]/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]; }); }
   function hl(text, words){
     var s = esc(text);
     if(!words) return s;
-    words.forEach(function(w){
-      s = s.replace(new RegExp('('+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'), '\u0001$1\u0002');
-    });
+    words.forEach(function(w){ s = s.replace(new RegExp('('+w+')','gi'), '\u0001$1\u0002'); });
     return s.replace(/\u0001/g,'<mark>').replace(/\u0002/g,'</mark>');
   }
+
+  // sample history (newest first)
+  var R = [
+    {wip:1, lane:1, c:'l3', msg:'3 fichiers modifiés · 1 indexé', p:[1]},
+    {lane:1, c:'l3', sha:'a41c9e2', msg:'feat(scoring): pondère les tâches en retard', who:'Julien B.', when:'17:02', refs:[['head','feature/scoring']], p:[3]},
+    {lane:0, c:'l0', sha:'9f03b7d', msg:'fix(api): gère le 404 sur /tasks/:id', who:'Camille R.', when:'15:10', refs:[['both','main'],['remote','origin/release/0.4']], p:[4]},
+    {lane:1, c:'l3', sha:'e27d410', msg:'refactor(scoring): extrait computeUrgency()', who:'Julien B.', when:'hier', refs:[['remote','origin/feature/scoring']], p:[8]},
+    {lane:0, c:'l0', sha:'5b8a0c1', msg:'Merge pull request #142 from fix/pwa-cache', who:'Camille R.', when:'hier', merge:1, p:[5,6]},
+    {lane:0, c:'l0', sha:'c3d9e58', msg:'chore(deps): passe à nuxt 4.1.2', who:'Sam T.', when:'lun. 21', p:[8]},
+    {lane:2, c:'l2', sha:'71fe2aa', msg:'fix(pwa): invalide le cache au changement de version', who:'Léa M.', when:'lun. 21', refs:[['remote','origin/fix/pwa-cache']], p:[7]},
+    {lane:2, c:'l2', sha:'0ad6f93', msg:'test(pwa): couvre la mise à jour du service worker', who:'Léa M.', when:'dim. 20', p:[8]},
+    {lane:0, c:'l0', sha:'d88e1b4', msg:'feat(tasks): vue « une tâche à la fois »', who:'Sam T.', when:'ven. 18', refs:[['tag','v0.4.0']], p:[10]},
+    {lane:2, c:'lx', stash:1, sha:'stash@{0}', msg:'On main: essai layout mobile', who:'Camille R.', when:'jeu. 17', p:[10]},
+    {lane:0, c:'l0', sha:'46a2c7b', msg:"Merge branch 'feature/onboarding'", who:'Sam T.', when:'mer. 16', merge:1, p:[11,12]},
+    {lane:0, c:'l0', sha:'b19e3f0', msg:'fix(auth): expire la session après 30 j', who:'Camille R.', when:'mar. 15', p:[14]},
+    {lane:2, c:'l4', sha:'8e07d25', msg:'feat(onboarding): écran de bienvenue', who:'Léa M.', when:'lun. 14', refs:[['local','feature/onboarding']], p:[13]},
+    {lane:2, c:'l4', sha:'f5c81a9', msg:'feat(onboarding): choix des catégories', who:'Léa M.', when:'sam. 12', p:[14]},
+    {lane:0, c:'l0', sha:'2d6b94e', msg:'feat(pwa): installation hors ligne', who:'Sam T.', when:'mer. 9', refs:[['tag','v0.3.0']], p:[15]},
+    {lane:0, c:'l0', sha:'0c1f7a3', msg:'chore: initialise le projet Nuxt 4', who:'Sam T.', when:'mer. 2', p:[]}
+  ];
+  // stacked-branch scenario
+  var S = [
+    {lane:2, c:'l3', sha:'7a1e0c4', msg:"feat(export): ajoute l'export CSV", who:'Julien B.', when:'17:40', refs:[['head','feat/a'],['warn','base réécrite']], p:[2]},
+    {lane:1, c:'l1', sha:'9c2e7f1', msg:'fix(api): tri stable', who:'Camille R.', when:'16:05', refs:[['both','develop']], p:[3]},
+    {lane:2, c:'l3', sha:'3f08b2d', msg:'feat(export): colonnes configurables', who:'Julien B.', when:'hier', p:[4]},
+    {lane:1, c:'l1', sha:'1d4c6a8', msg:'feat(api): pagination des tâches', who:'Camille R.', when:'hier', p:[5]},
+    {lane:2, c:'l3', sha:'e5b913a', msg:'test(export): couvre les séparateurs', who:'Julien B.', when:'hier', p:[6]},
+    {lane:0, c:'l0', sha:'2aa90d3', msg:'chore(release): v0.4.1', who:'Sam T.', when:'mar. 22', refs:[['both','main']], p:[8]},
+    {lane:2, c:'lx', ghost:1, sha:'b77e210', msg:'fix(api): tri stable', note:'ancienne version de 9c2e7f1', who:'Camille R.', when:'lun. 21', p:[7]},
+    {lane:2, c:'lx', ghost:1, sha:'60c1f5e', msg:'feat(api): pagination des tâches', note:'ancienne version de 1d4c6a8', who:'Camille R.', when:'lun. 21', p:[8]},
+    {lane:0, c:'l0', sha:'d88e1b4', msg:'feat(tasks): vue « une tâche à la fois »', who:'Sam T.', when:'ven. 18', refs:[['tag','v0.4.0']], p:[]}
+  ];
+
+  var RH = 28, LW = 16, X0 = 14;
+  var PRIO = {head:0, both:1, local:2, remote:3, tag:4, stash:5};
+
+  function colorOf(c, o){ return (o.focus && c !== 'lx' && o.focus.indexOf(c) < 0) ? 'm'+c.slice(1) : c; }
+  function pill(t, name, c){
+    if(t === 'warn') return '<span class="warnchip">'+ic('warn')+esc(name)+'</span>';
+    var icons = t==='remote' ? ic('cloud') : t==='tag' ? ic('tag') : t==='both' ? ic('laptop')+ic('cloud') : t==='head' ? ic('check') : t==='stash' ? ic('box') : ic('laptop');
+    return '<span class="pill'+(t==='head'?' head':'')+(t==='tag'?' tag':'')+'" style="--c:var(--'+c+')">'+icons+esc(name)+'</span>';
+  }
+  function parseMsg(m){
+    var pr = m.match(/^Merge pull request #(\d+) from (.+)$/);
+    if(pr) return {merge:pr[2], pr:pr[1]};
+    var mb = m.match(/^Merge branch '(.+)'/);
+    if(mb) return {merge:mb[1]};
+    var cc = m.match(/^(\w+)(?:\(([^)]+)\))?!?:\s*(.*)$/);
+    if(cc) return {type:cc[1], scope:cc[2], subj:cc[3]};
+    return {subj:m};
+  }
+
   function lanesSVG(rows, o){
     var n = rows.length, maxLane = 0;
     rows.forEach(function(r){ if(r.lane>maxLane) maxLane=r.lane; });
     var w = X0*2 + maxLane*LW, h = n*RH, out = [];
     var x = function(l){ return X0 + l*LW; }, y = function(i){ return i*RH + RH/2; };
+    var dimmed = function(r){ return o.dim && !o.dim(r); };
     rows.forEach(function(r, i){
       (r.p||[]).forEach(function(pi, j){
         if(pi >= n) return;
@@ -684,91 +869,187 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
         if(r.lane === p.lane){ d = 'M'+xi+' '+yi+'V'+yp; col = r.c; }
         else if(j === 0){ var yb = yp - RH; d = 'M'+xi+' '+yi+'V'+yb+'C'+xi+' '+(yb+RH*.55)+' '+xp+' '+(yp-RH*.45)+' '+xp+' '+yp; col = r.c; }
         else { var ya = yi + RH; d = 'M'+xi+' '+yi+'C'+xi+' '+(yi+RH*.55)+' '+xp+' '+(ya-RH*.45)+' '+xp+' '+ya+'V'+yp; col = p.c; }
-        var dim = o.dim && !(o.dim(r) || o.dim(p));
-        out.push('<path d="'+d+'" style="fill:none;stroke:var(--'+col+');stroke-width:2;opacity:'+(dim?.28:(r.wip?.7:1))+'"'+(r.wip?' stroke-dasharray="3 3"':'')+'/>');
+        var ghost = r.ghost || p.ghost, dash = r.wip || ghost;
+        if(ghost) col = 'lx';
+        var op = (dimmed(r) && dimmed(p)) ? .28 : (r.wip ? .7 : 1);
+        out.push('<path d="'+d+'" style="fill:none;stroke:var(--'+colorOf(col,o)+');stroke-width:2;opacity:'+op+'"'+(dash?' stroke-dasharray="3 3"':'')+'/>');
       });
     });
     rows.forEach(function(r, i){
-      var cx = x(r.lane), cy = y(i), c = 'var(--'+r.c+')', op = o.dim && !o.dim(r) ? .3 : 1;
+      var cx = x(r.lane), cy = y(i), c = 'var(--'+colorOf(r.c,o)+')', op = dimmed(r) ? .3 : 1;
+      if(o.connect && r.refs && !o.inline) out.push('<path d="M-10 '+cy+'H'+(cx-6)+'" style="stroke:'+c+';stroke-width:1.5;opacity:'+(op*.9)+'"/>');
       if(r.wip) out.push('<circle cx="'+cx+'" cy="'+cy+'" r="5" style="fill:var(--app-bg);stroke:'+c+';stroke-width:1.8;opacity:'+op+'" stroke-dasharray="2.5 2"/>');
+      else if(r.ghost) out.push('<circle cx="'+cx+'" cy="'+cy+'" r="4.5" style="fill:var(--app-bg);stroke:var(--lx);stroke-width:1.6" stroke-dasharray="2 2"/>');
       else if(r.stash) out.push('<rect x="'+(cx-4.5)+'" y="'+(cy-4.5)+'" width="9" height="9" rx="2" style="fill:var(--app-bg);stroke:'+c+';stroke-width:1.8;opacity:'+op+'"/>');
       else if(r.merge) out.push('<circle cx="'+cx+'" cy="'+cy+'" r="3.5" style="fill:'+c+';stroke:var(--app-bg);stroke-width:2;opacity:'+op+'"/>');
       else if(r.refs && r.refs[0][0]==='head') out.push('<circle cx="'+cx+'" cy="'+cy+'" r="7" style="fill:var(--app-bg);stroke:'+c+';stroke-width:2"/><circle cx="'+cx+'" cy="'+cy+'" r="3.5" style="fill:'+c+'"/>');
       else out.push('<circle cx="'+cx+'" cy="'+cy+'" r="5" style="fill:'+c+';stroke:var(--app-bg);stroke-width:2;opacity:'+op+'"/>');
     });
-    return {w:w, svg:'<svg class="lanes" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" aria-hidden="true">'+out.join('')+'</svg>'};
+    return {w:w, svg:'<svg class="lanes" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" style="left:'+(o.inline?0:o.refsW)+'px" aria-hidden="true">'+out.join('')+'</svg>'};
+  }
+
+  function msgHTML(r, o){
+    var gut = function(inner){ return o.cc ? '<span class="ctype">'+(inner||'')+'</span>' : (inner||''); };
+    if(r.wip) return gut(ic('pencil'))+'<span class="txt">'+esc(r.msg)+'</span>';
+    if(r.stash) return gut('stash')+'<span class="txt">'+esc(r.msg)+'</span>';
+    var pm = o.cc ? parseMsg(r.msg) : {subj:r.msg}, pre = '';
+    if(o.cc){
+      if(pm.merge) return '<span class="ctype">merge</span><span class="txt mg">⤙ <b>'+hl(pm.merge,o.words)+'</b>'+(pm.pr?'<span class="pr">#'+pm.pr+'</span>':'')+'</span>';
+      pre = '<span class="ctype">'+(pm.type||'')+'</span>';
+      var note = r.note ? '<span class="ghostnote">'+esc(r.note)+'</span>' : '';
+      return pre+'<span class="txt">'+(pm.scope?'<span class="scope">'+esc(pm.scope)+'</span>':'')+hl(pm.subj,o.words)+'</span>'+note;
+    }
+    return '<span class="txt">'+hl(r.msg,o.words)+'</span>';
+  }
+
+  function refsHTML(r, o){
+    var list = (r.refs||[]).slice();
+    if(r.stash) list = [['stash','stash@{0}']];
+    var warn = list.filter(function(x){ return x[0]==='warn'; });
+    list = list.filter(function(x){ return x[0]!=='warn'; }).sort(function(a,b){ return PRIO[a[0]]-PRIO[b[0]]; });
+    if(!list.length) return warn.map(function(x){ return pill('warn',x[1]); }).join('');
+    var c = colorOf(r.c, o);
+    return warn.map(function(x){ return pill('warn',x[1]); }).join('') + (list.length>1 ? '<span class="more">+'+(list.length-1)+'</span>' : '') + pill(list[0][0], list[0][1], c);
   }
 
   function renderGraph(el, rows, o){
     o = o || {};
-    var L = lanesSVG(rows, o), gw = Math.max(L.w, 64);
-    var cols = gw+'px minmax(0,1fr) 110px 92px 78px';
-    var html = '<div class="ghead" style="grid-template-columns:'+cols+'"><span>Graph</span><span>Message</span><span>Auteur</span><span>Date</span><span>Sha</span></div><div class="rows">';
+    o.refsW = o.inline ? 0 : (o.refsW || 170);
+    var L = lanesSVG(rows, o), gw = Math.max(L.w, 56);
+    var cols = (o.inline ? '' : o.refsW+'px ') + gw+'px minmax(0,1fr) 104px 74px' + (o.sha ? ' 76px' : '') + (o.minimap ? ' 11px' : '');
+    var head = (o.inline ? '' : '<span>Refs</span>') + '<span></span><span>Message</span><span>Auteur</span><span>Date</span>' + (o.sha?'<span>Sha</span>':'') + (o.minimap?'<span></span>':'');
+    var html = '<div class="ghead" style="grid-template-columns:'+cols+'">'+head+'</div><div class="rows">';
+    var prevWhen = null, prevWho = null;
     rows.forEach(function(r, i){
       var cls = ['row'];
-      if(r.wip) cls.push('wip'); if(r.stash) cls.push('stash'); if(r.merge) cls.push('merge');
+      if(r.wip) cls.push('wip'); if(r.stash) cls.push('stash'); if(r.merge) cls.push('merge'); if(r.ghost) cls.push('ghost');
       if(o.sel === i) cls.push('sel'); if(o.drop === i) cls.push('drop');
       if(o.dim && !o.dim(r)) cls.push('dim');
-      var refs = (r.refs||[]).map(function(x){ return pill(x[0], x[1], r.c); }).join('');
-      if(r.stash) refs = pill('local','stash@{0}','lx').replace('#i-laptop','#i-box');
-      var msg = r.wip ? ic('pencil')+'<span class="txt">'+esc(r.msg)+'</span>' : refs + '<span class="txt">'+hl(r.msg, o.words)+'</span>';
-      html += '<div class="'+cls.join(' ')+'" style="grid-template-columns:'+cols+'"><span></span><span class="msg">'+msg+'</span><span class="who">'+(r.who?esc(r.who):'')+'</span><span class="when">'+(r.when||'')+'</span><span class="sha">'+(r.stash||r.wip?'':r.sha)+'</span></div>';
+      var msg = msgHTML(r, o);
+      if(o.inline && !r.wip){
+        var pills = (r.refs||[]).map(function(x){ return pill(x[0], x[1], r.c); }).join('');
+        if(r.stash) pills = pill('stash','stash@{0}','lx');
+        msg = pills + msg;
+      }
+      var when = r.when || '', who = r.who || '';
+      var whenOut = (o.dedupe && when === prevWhen) ? '' : when;
+      var whoCls = (o.dedupe && who && who === prevWho) ? 'who rep' : 'who';
+      if(!r.wip){ prevWhen = when; prevWho = who; }
+      html += '<div class="'+cls.join(' ')+'" style="grid-template-columns:'+cols+'">'
+        + (o.inline ? '' : '<span class="refs">'+refsHTML(r,o)+'</span>')
+        + '<span></span><span class="msg">'+msg+'</span><span class="'+whoCls+'">'+esc(who)+'</span><span class="when">'+whenOut+'</span>'
+        + (o.sha ? '<span class="sha">'+(r.stash||r.wip?'':r.sha)+'</span>' : '') + (o.minimap?'<span></span>':'') + '</div>';
     });
     html += L.svg + '</div>';
+    if(o.minimap){
+      html += '<div class="minimap"><div class="thumb"></div>' + o.minimap.map(function(m){ return '<i style="top:'+m[0]+'%;background:var(--'+m[1]+')"></i>'; }).join('') + '</div>';
+    }
     el.innerHTML = html;
-    return gw;
+    return {gw:gw, refsW:o.refsW};
   }
 
-  renderGraph(document.getElementById('g-main'), R, {sel:1});
+  var FOCUS = ['l0','l3'];
+  var MM = [[1,'l3'],[1.6,'l0'],[3,'l0'],[6,'m4'],[11,'l0'],[24,'l0'],[38,'m2'],[52,'l0'],[71,'l0'],[88,'l0']];
+  renderGraph(document.getElementById('g-main'), R, {sel:1, cc:1, dedupe:1, focus:FOCUS, connect:1, minimap:MM});
 
+  // B: comparison
+  var cut = R.slice(0,11);
+  renderGraph(document.getElementById('g-before'), cut, {inline:1, sha:1});
+  renderGraph(document.getElementById('g-after'), cut, {cc:1, dedupe:1, focus:FOCUS, connect:1, refsW:175});
+
+  // C: search
   var words = ['pwa','cache'];
-  renderGraph(document.getElementById('g-search'), R.slice(0,15), {
-    words: words,
-    dim: function(r){ return !r.wip && words.some(function(w){ return (r.msg+' '+(r.refs||[]).map(function(x){return x[1];}).join(' ')).toLowerCase().indexOf(w)>=0; }); },
-    sel: 4
-  });
+  var hit = function(r){ return !r.wip && words.some(function(w){ return (r.msg+' '+(r.refs||[]).map(function(x){return x[1];}).join(' ')).toLowerCase().indexOf(w)>=0; }); };
+  var MMS = MM.map(function(m){ return [m[0], 'm'+m[1].slice(1)]; }).concat([[9,'mark'],[14,'mark'],[17,'mark'],[33,'mark']]);
+  renderGraph(document.getElementById('g-search'), R.slice(0,15), {words:words, dim:hit, sel:4, cc:1, dedupe:1, focus:FOCUS, connect:1, minimap:MMS});
 
-  // ---- drag & drop plate: first 9 rows, target = main row
+  // D: stacked branch
+  renderGraph(document.getElementById('g-onto'), S, {cc:1, dedupe:1, focus:['l0','l1','l3'], connect:1, refsW:190, sel:0});
+  document.getElementById('cmd-onto').innerHTML = '<span class="t-git">git</span> <span class="t-sub">rebase</span> <span class="t-flag">--onto</span> <span class="t-ref" style="color:var(--l1)">develop</span> <span class="t-ref" style="color:var(--l3)">feat/a</span><span class="t-op">~3</span> <span class="t-ref" style="color:var(--l3)">feat/a</span>';
+
+  function chain(nodes, links, labels){
+    var s = '';
+    links.forEach(function(l){ s += '<path d="'+l[0]+'" style="fill:none;stroke:var(--'+l[1]+');stroke-width:1.8"'+(l[2]?' stroke-dasharray="3 3"':'')+'/>'; });
+    nodes.forEach(function(n){
+      s += n[3] ? '<circle cx="'+n[0]+'" cy="'+n[1]+'" r="3.8" style="fill:var(--app-bg);stroke:var(--'+n[2]+');stroke-width:1.5" stroke-dasharray="2 1.6"/>'
+                : '<circle cx="'+n[0]+'" cy="'+n[1]+'" r="4" style="fill:var(--'+n[2]+');stroke:var(--app-bg);stroke-width:1.5"/>';
+    });
+    labels.forEach(function(t){ s += '<text x="'+t[0]+'" y="'+t[1]+'" style="fill:var(--'+(t[3]||'ink-2')+');font:500 9.5px var(--f-ui)">'+t[2]+'</text>'; });
+    return s;
+  }
+  document.getElementById('pv-before').innerHTML = chain(
+    [[20,112,'l0'],[20,88,'l1'],[20,70,'l1'],[82,92,'lx',1],[82,76,'lx',1],[82,56,'l3'],[82,40,'l3'],[82,24,'l3']],
+    [['M20 112V70','l1'],['M20 112C20 100 82 104 82 92V76','lx',1],['M82 76V24','l3']],
+    [[28,115,'main'],[28,73,'develop'],[90,27,'feat/a'],[90,87,'ancien','ink-3'],[90,98,'develop','ink-3']]);
+  document.getElementById('pv-after').innerHTML = chain(
+    [[20,112,'l0'],[20,92,'l1'],[20,76,'l1'],[20,56,'l3'],[20,40,'l3'],[20,24,'l3']],
+    [['M20 112V92','l0'],['M20 92V76','l1'],['M20 76V24','l3']],
+    [[28,115,'main'],[28,79,'develop'],[28,27,'feat/a · 3 commits']]);
+
+  // E: drag & drop on the first 9 rows
   var dnd = document.getElementById('g-dnd');
-  var gw = renderGraph(dnd, R.slice(0,9), {drop:2});
+  var g = renderGraph(dnd, R.slice(0,9), {drop:2, cc:1, dedupe:1, focus:FOCUS, connect:1});
   var rowsEl = dnd.querySelector('.rows');
+  var orig = dnd.querySelectorAll('.row')[1].querySelector('.pill.head');
+  if(orig) orig.style.opacity = '.35';
   var ghost = document.createElement('span');
   ghost.className = 'pill head ghost';
-  ghost.style.cssText = '--c:var(--l3);left:'+(gw+150)+'px;top:'+(2*RH+8)+'px';
+  ghost.style.cssText = '--c:var(--l3);left:'+(g.refsW+g.gw+120)+'px;top:'+(2*RH+8)+'px';
   ghost.innerHTML = ic('check')+'feature/scoring';
   rowsEl.appendChild(ghost);
   var label = document.createElement('div');
-  label.style.cssText = 'position:absolute;z-index:5;left:'+(gw+168)+'px;top:'+(2*RH+32)+'px;font:600 11.5px var(--f-ui);color:var(--l0);background:var(--app-raise);border:1px solid var(--app-line);padding:4px 8px;border-radius:6px;box-shadow:var(--shadow);white-space:nowrap';
+  label.style.cssText = 'position:absolute;z-index:5;left:'+(g.refsW+g.gw+138)+'px;top:'+(2*RH+32)+'px;font:600 11.5px var(--f-ui);color:var(--l0);background:var(--app-raise);border:1px solid var(--app-line);padding:4px 8px;border-radius:6px;box-shadow:var(--shadow);white-space:nowrap';
   label.textContent = 'Rebase feature/scoring sur main';
   rowsEl.appendChild(label);
   var menu = document.createElement('div');
   menu.className = 'menu';
-  menu.style.cssText = 'position:absolute;z-index:6;left:'+(gw+410)+'px;top:'+(2*RH-6)+'px;max-width:330px';
+  menu.style.cssText = 'position:absolute;z-index:6;left:'+(g.refsW+g.gw+390)+'px;top:'+(RH-4)+'px;max-width:340px';
   menu.innerHTML =
     '<div class="mlabel">feature/scoring → main</div>'+
     '<div class="mi hot">'+ic('rebase')+'<span class="two"><span>Rebase feature/scoring sur main</span><span class="cmd">git rebase main</span></span><span class="k">↵</span></div>'+
-    '<div class="mi">'+ic('rebase')+'<span class="two"><span>Rebase interactif sur main…</span><span class="cmd">git rebase -i main</span></span></div>'+
+    '<div class="mi">'+ic('rebase')+'<span class="two"><span>Rebase interactif sur main…</span><span class="cmd">éditeur de todo</span></span></div>'+
     '<div class="mi">'+ic('merge')+'<span class="two"><span>Merge main dans feature/scoring</span><span class="cmd">git merge main</span></span></div>'+
     '<div class="mi">'+ic('merge')+'<span class="two"><span>Checkout main puis merge feature/scoring</span><span class="cmd">git switch main &amp;&amp; git merge feature/scoring</span></span></div>'+
     '<div class="mi dis">'+ic('push')+'<span class="two"><span>Fast-forward main</span><span class="cmd">impossible : branches divergentes</span></span></div>';
   rowsEl.appendChild(menu);
-  // faded origin of the drag on row 1
-  var orig = dnd.querySelectorAll('.row')[1].querySelector('.pill.head');
-  if(orig) orig.style.opacity = '.35';
 
-  // ---- lane swatches
+  // alignment markers on the comparison plate
+  function markers(){
+    [['g-before','tick'],['g-after','guide']].forEach(function(pair){
+      var root = document.getElementById(pair[0]);
+      root.querySelectorAll('.tick,.guide').forEach(function(n){ n.remove(); });
+      root.style.position = 'relative';
+      var base = root.getBoundingClientRect();
+      var txts = root.querySelectorAll('.row:not(.wip) .txt');
+      if(pair[1] === 'tick'){
+        txts.forEach(function(t){
+          var b = t.getBoundingClientRect(), m = document.createElement('i');
+          m.className = 'tick'; m.style.left = (b.left-base.left-3)+'px'; m.style.top = (b.top-base.top+(b.height-16)/2)+'px';
+          root.appendChild(m);
+        });
+      } else if(txts.length){
+        var b = txts[1].getBoundingClientRect(), m = document.createElement('i');
+        m.className = 'guide'; m.style.left = (b.left-base.left-3)+'px';
+        root.appendChild(m);
+      }
+    });
+  }
+  markers();
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(markers);
+  window.addEventListener('resize', markers);
+
+  // J: swatches
   var names = ['Bleu','Violet','Sarcelle','Ambre','Rose','Vert','Orange','Cyan'];
   document.getElementById('sw-lanes').innerHTML = names.map(function(n,i){
-    return '<div><i style="background:var(--l'+i+')"></i>'+n+'<code>--l'+i+'</code></div>';
+    return '<div><i style="background:linear-gradient(90deg,var(--l'+i+') 0 60%,var(--m'+i+') 60%)"></i>'+n+'<code>--l'+i+' · --m'+i+'</code></div>';
   }).join('');
-
-  // ---- node catalog
   var nodes = [
     ['Commit','<circle cx="18" cy="18" r="5" style="fill:var(--l0);stroke:var(--app-bg);stroke-width:2"/>'],
     ['HEAD','<circle cx="18" cy="18" r="7" style="fill:var(--app-bg);stroke:var(--l3);stroke-width:2"/><circle cx="18" cy="18" r="3.5" style="fill:var(--l3)"/>'],
     ['Merge','<circle cx="18" cy="18" r="3.5" style="fill:var(--l0)"/>'],
-    ['WIP','<circle cx="18" cy="18" r="5" style="fill:none;stroke:var(--l3);stroke-width:1.8" stroke-dasharray="2.5 2"/>'],
-    ['Stash','<rect x="13.5" y="13.5" width="9" height="9" rx="2" style="fill:none;stroke:var(--lx);stroke-width:1.8"/>']
+    ['WIP','<circle cx="18" cy="18" r="5" style="fill:var(--app-bg);stroke:var(--l3);stroke-width:1.8" stroke-dasharray="2.5 2"/>'],
+    ['Stash','<rect x="13.5" y="13.5" width="9" height="9" rx="2" style="fill:var(--app-bg);stroke:var(--lx);stroke-width:1.8"/>'],
+    ['Réécrit','<circle cx="18" cy="18" r="4.5" style="fill:var(--app-bg);stroke:var(--lx);stroke-width:1.6" stroke-dasharray="2 2"/>']
   ];
   document.getElementById('nodes').innerHTML = nodes.map(function(n){
     return '<figure><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M18 0V36" style="stroke:var(--app-line);stroke-width:2"/>'+n[1]+'</svg>'+n[0]+'</figure>';

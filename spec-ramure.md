@@ -1,283 +1,323 @@
-# Ramure — cahier des charges
+# Ramure : cahier des charges
 
-> Version 0.1 · Statut : **spécification** (draft à challenger)
-> Planche design associée : [`design-board.html`](./design-board.html)
+> Version 0.2 · Statut : **spécification** (draft à challenger)
+> Planche design : [`design-board.html`](./design-board.html) · Lisibilité du graph : [`ux-graph.md`](./ux-graph.md)
+
+### Changements depuis la v0.1
+
+- **Open source** dès le départ.
+- Positionnement resserré : **viewer git** avec un peu de sucre. Aucune intégration de service
+  externe, jamais.
+- **Ramure n'exécute aucune commande qui modifie le dépôt** (phase initiale) : il **génère des
+  commandes git natives** à coller dans le terminal. Plus de terminal intégré, plus de gestion
+  d'identifiants, plus de journal d'opérations maison.
+- Identités git : lecture de la config existante uniquement ; on encourage le standard
+  `includeIf`.
+- Staging et commit sortis du périmètre (IDE ou terminal).
+- Nouveau : **branches empilées** et `git rebase --onto` assisté.
+- Vue du graph revue (refs | graph | messages alignés), voir `ux-graph.md`.
 
 ---
 
 ## 1. Contexte
 
 L'équipe utilise GitKraken essentiellement pour **visualiser le commit graph** et pour quelques
-gestes rapides : recherche instantanée, lancement d'un rebase (interactif ou non), commandes git
-courantes par **drag & drop** ou **menu contextuel**. Le reste de l'offre (workspaces cloud,
-intégrations issues, Launchpad, IA, etc.) n'est pas utilisé, alors que l'abonnement est facturé
-par siège, chaque année.
+gestes rapides : recherche instantanée, rebase (interactif ou non), commandes git courantes par
+**drag & drop** ou **menu contextuel**. Le reste de l'offre n'est pas utilisé, alors que
+l'abonnement est facturé par siège, chaque année.
 
-**Ramure** (nom de code) est un client git de bureau, autonome et hors ligne, construit avec
-**Tauri 2 + Rust + Vue 3**, qui reprend uniquement ces fonctionnalités, avec un objectif de
-performance supérieur à GitKraken sur les gros dépôts.
+**Ramure** (nom de code) est un **viewer git** de bureau, open source, autonome et hors ligne,
+construit avec **Tauri 2 + Rust + Vue 3**. Il affiche le graph le plus lisible possible et
+transforme les gestes (glisser, menu, palette) en **commandes git natives prêtes à coller**.
 
 ### 1.1 Objectifs
 
 | # | Objectif | Mesure de succès |
 |---|----------|------------------|
 | O1 | Remplacer GitKraken pour l'usage quotidien de l'équipe | 100 % de l'équipe sur Ramure 1 mois après la V1, abonnement résilié |
-| O2 | Graph plus rapide que GitKraken | Ouverture d'un dépôt de 100 k commits : graph affiché en < 1 s (à chaud) |
-| O3 | Recherche « au fil de la frappe » | < 16 ms par frappe sur 100 k commits (message, sha, auteur, ref) |
-| O4 | Aucune opération destructrice irréversible | Toute opération qui déplace une ref est annulable (Ctrl+Z) |
-| O5 | Application légère | Installeur < 20 Mo, RAM < 300 Mo sur 100 k commits |
+| O2 | Graph plus lisible que GitKraken | Tâches du test utilisateur (`ux-graph.md` §5) au moins aussi rapides, T2 plus rapide |
+| O3 | Graph plus rapide que GitKraken | Ouverture d'un dépôt de 100 k commits : graph affiché en < 1 s (à chaud) |
+| O4 | Recherche « au fil de la frappe » | < 16 ms par frappe sur 100 k commits |
+| O5 | Zéro risque pour le dépôt | Ramure n'écrit jamais dans le dépôt ; chaque commande générée affiche sa commande d'annulation |
+| O6 | Application légère | Installeur < 20 Mo, RAM < 300 Mo sur 100 k commits |
 
-### 1.2 Hors périmètre (explicitement)
+### 1.2 Principes structurants
 
-- Hébergement cloud, comptes utilisateurs, synchronisation de préférences.
-- Gestion d'issues, tableaux Kanban, « Workspaces ».
-- Fonctions IA (message de commit généré, etc.) — éventuellement plus tard, en option.
-- Remplacer un IDE : pas d'édition de fichiers hors résolution de conflits.
-- Support de VCS autres que git.
+1. **Viewer d'abord.** La valeur principale est de *voir* et de *comprendre* l'historique.
+2. **Git natif, rien d'autre.** Ramure ne connaît que le dépôt local et la config git. Pas
+   d'API GitHub/GitLab/Bitbucket, pas de compte, pas de cloud, pas de télémétrie, pas d'avatar
+   distant. Ramure ne fait aucune requête réseau (même `fetch` est une commande à copier).
+3. **Lecture seule sur le dépôt.** Les opérations sont des **commandes générées** que
+   l'utilisateur exécute dans son terminal, avec son contexte (shell, identité, agent SSH, hooks,
+   signature). Ramure détecte le résultat grâce au watcher et met le graph à jour.
+4. **Réutiliser le standard.** Identités, signature, alias, `rerere`, `pull.rebase` : tout vient
+   de la config git ; Ramure l'affiche, ne la duplique pas.
+
+### 1.3 Hors périmètre (explicitement et durablement)
+
+- Intégrations de services : PR/MR, issues, CI, forges, avatars Gravatar.
+- Terminal intégré ; exécution de commandes d'écriture (réévaluable plus tard, voir §10).
+- Gestion d'identifiants (credential helper, SSH) et de profils git.
+- Staging, commit, édition de fichiers, résolution de conflits intégrée.
+- Fonctions IA, synchronisation de préférences, VCS autres que git.
+
+### 1.4 Licence et gouvernance
+
+- Licence : **MIT OR Apache-2.0** (double licence, convention de l'écosystème Rust et de Tauri).
+- Dépôt public `Creatiwity/ramure` dès l'extraction de l'incubator (début de phase 1), avec
+  `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, modèles d'issues, CI publique.
+- Builds signés et publiés via GitHub Releases ; mises à jour via le plugin updater de Tauri
+  (seule requête réseau de l'application, désactivable, et désactivée dans les builds distribués
+  par des gestionnaires de paquets).
 
 ---
 
 ## 2. Utilisateurs et cas d'usage
 
 **Persona principal : développeur·se de l'équipe**, à l'aise avec git en ligne de commande, qui
-veut *voir* l'historique et exécuter vite les opérations courantes sans taper les commandes ni
-risquer une erreur.
+veut *voir* l'historique et obtenir vite la bonne commande, sans risque d'erreur de syntaxe ni de
+cible.
 
-Cas d'usage prioritaires (issus de l'usage actuel de GitKraken) :
-
-1. **Comprendre l'état d'un dépôt** : où sont mes branches par rapport à `main` et à `origin` ?
-   Qu'est-ce qui a été mergé ? Qui a touché quoi ?
-2. **Retrouver un commit** en quelques frappes (bout de message, sha, auteur, nom de branche,
-   ticket `#142`).
-3. **Rebaser ma branche** sur `main` à jour : glisser `feature/x` sur `main` → « Rebase ».
-4. **Nettoyer ma branche avant PR** : rebase interactif (squash, fixup, reword, réordonner).
-5. **Gestes courants** : checkout, créer une branche à un commit, cherry-pick, reset, revert,
-   stash, fetch/pull/push, supprimer une branche locale et distante.
-6. **Me sortir d'un conflit** pendant un rebase/merge : voir les fichiers en conflit, choisir
-   ours/theirs, ouvrir mon outil de merge, continuer/annuler.
-7. **Annuler une bêtise** : Ctrl+Z après un reset, un rebase ou une suppression de branche.
+1. **Comprendre l'état d'un dépôt** : où sont mes branches par rapport à `main`, `develop` et
+   `origin` ? Qu'est-ce qui a été mergé ? Qui a touché quoi ?
+2. **Retrouver un commit** en quelques frappes (message, sha, auteur, branche, `#142`).
+3. **Rebaser ma branche** : glisser `feature/x` sur `develop` → commande copiée.
+4. **Rebaser une branche empilée** après la réécriture de sa base :
+   `git rebase --onto develop feat/a~3 feat/a`, sans compter les commits à la main.
+5. **Nettoyer ma branche avant PR** : rebase interactif édité visuellement, puis une commande à
+   coller.
+6. **Gestes courants** : checkout, créer/supprimer une branche, cherry-pick, reset, revert,
+   stash, fetch/pull/push, toujours sous forme de commande.
+7. **Suivre une opération en cours** (rebase, merge, cherry-pick) lancée dans le terminal :
+   étape, fichiers en conflit, commande pour continuer ou annuler.
+8. **Annuler** : copier la commande qui remet la branche où elle était.
 
 ---
 
 ## 3. Fonctionnalités
 
 Priorités **MoSCoW** : **M** = Must (MVP), **S** = Should (V1), **C** = Could (V2+).
-Chaque fonctionnalité a un identifiant stable (`F-xx`) à référencer dans les issues/PR.
+Identifiants stables `F-xx` à référencer dans les issues et PR.
 
 ### 3.1 Dépôts
 
 | ID | Prio | Fonctionnalité |
 |----|------|----------------|
-| F-01 | M | Ouvrir un dépôt local (dialogue, glisser un dossier sur la fenêtre, argument CLI `ramure <chemin>`). |
-| F-02 | M | Liste des dépôts récents, épinglables. |
-| F-03 | S | Onglets : plusieurs dépôts ouverts dans une même fenêtre. |
-| F-04 | M | Rafraîchissement automatique sur changement du dépôt (watcher sur `.git/` et arbre de travail, debounce). Aucun bouton « Refresh » nécessaire. |
-| F-05 | S | Cloner un dépôt (URL + dossier cible, progression). |
-| F-06 | C | Worktrees : lister, créer, ouvrir dans un onglet. |
-| F-07 | C | Sous-modules : affichage de l'état, update. |
+| F-01 | M | Ouvrir un dépôt local (dialogue, glisser un dossier sur la fenêtre, `ramure <chemin>`). |
+| F-02 | M | Dépôts récents, épinglables. |
+| F-03 | S | Onglets : plusieurs dépôts dans une fenêtre. |
+| F-04 | M | Rafraîchissement automatique (watcher sur `.git/` et l'arbre de travail, debounce). Aucun bouton « Refresh ». |
+| F-06 | C | Worktrees : lister, ouvrir dans un onglet. |
+| F-07 | C | Sous-modules : état. |
 
 ### 3.2 Commit graph (cœur du produit)
 
+Les règles de mise en page et leurs justifications sont dans [`ux-graph.md`](./ux-graph.md) (décisions D1 à D8).
+
 | ID | Prio | Fonctionnalité |
 |----|------|----------------|
-| F-10 | M | Affichage du graph : une ligne par commit, colonnes *graph · message + refs · auteur · date · sha*. Colonnes redimensionnables et masquables. |
-| F-11 | M | Lanes colorées, une couleur stable par branche (la couleur suit la branche au scroll et d'une session à l'autre). Courbes de merge/fork lisibles. |
-| F-12 | M | Pastilles de refs sur les commits : branche locale, branche distante, tag, `HEAD`, stash. Une branche locale et sa distante au même commit sont fusionnées en une pastille (icônes ordinateur + nuage). |
-| F-13 | M | Ligne « Changements non commités » (WIP) en tête, rattachée à `HEAD`, avec compteur de fichiers. |
-| F-14 | M | Virtualisation : défilement fluide (60 fps) quelle que soit la taille de l'historique ; chargement progressif au-delà des N premiers commits. |
-| F-15 | M | Sélection d'un commit → panneau de détails (§3.4). Sélection multiple (Maj/Cmd) → diff cumulé et actions groupées (cherry-pick, squash). |
-| F-16 | S | Mise en évidence de l'ascendance : au survol/sélection, les commits hors ascendance du commit sélectionné sont atténués. |
-| F-17 | S | Filtrer le graph : masquer/afficher une branche, un remote, les tags, les stashes ; mode « branche courante uniquement ». |
-| F-18 | S | Indicateurs ahead/behind sur les branches locales (`↑2 ↓5`) dans la barre latérale et sur les pastilles. |
-| F-19 | S | Aller à : `HEAD`, une branche, un sha (raccourcis §3.9). |
-| F-20 | C | Replier une branche mergée en une seule ligne (« 12 commits de fix/pwa-cache »). |
-| F-21 | C | Avatars auteurs (Gravatar désactivable, initiales colorées par défaut — pas de requête réseau par défaut). |
+| F-10 | M | Trois zones : **refs · graph · texte** (message, auteur, date). Tous les messages commencent au même x (D1). Colonnes redimensionnables et masquables ; sha masqué par défaut. |
+| F-11 | M | Pastilles de refs alignées à droite contre le graph, reliées au nœud par un trait de la couleur de la branche ; une pastille visible + compteur `+N` ; locale et distante fusionnées ; troncature au milieu (D1). |
+| F-12 | M | Largeur de graph constante sur tout l'historique chargé, plafonnée à 10 lanes puis resserrée (D2). |
+| F-13 | M | Lanes *straight branches*, tronc épinglé en colonne 0 (`main`), `develop` en 1, configurable (D3). |
+| F-14 | M | Couleur « focus » : branche courante, sa base et la branche survolée en couleurs vives, les autres désaturées ; mode arc-en-ciel en option ; la couleur suit la branche (D4). |
+| F-15 | M | Ligne WIP en tête (compteur de fichiers modifiés / indexés), rattachée à `HEAD`. |
+| F-16 | M | Virtualisation : 60 fps quel que soit l'historique ; chargement progressif. |
+| F-17 | M | Sélection → panneau de détails (§3.4). Sélection multiple → diff cumulé et commandes groupées. |
+| F-18 | S | Conventional Commits détectés : type en sous-colonne grise, portée en gris secondaire, sujet aligné (D5). |
+| F-19 | S | Merges en forme courte et atténuée (`⤙ fix/pwa-cache  #142`) ; mode first-parent (D5). |
+| F-20 | S | Date affichée seulement quand elle change ; auteurs consécutifs identiques atténués (D6). |
+| F-21 | S | Mise en évidence de l'ascendance du commit sélectionné, le reste atténué. |
+| F-22 | S | Minimap dans la barre de défilement : HEAD, branches locales, tags, résultats de recherche (D7). |
+| F-23 | S | Filtres : branches, remotes, tags, stashes, first-parent, « ma branche et sa base » (D7). |
+| F-24 | S | Indicateurs ahead/behind (`↑2 ↓5`) par rapport à l'upstream et à la base. |
+| F-25 | C | Replier une branche mergée en une ligne (« 12 commits de fix/pwa-cache ») (D7). |
+| F-26 | M | Formes distinctes par type de nœud et de pastille, sans dépendre de la couleur (D8). |
 
-**Barre latérale** (M) : sections repliables *Branches locales · Remotes · Tags · Stashes*
-(*Worktrees · Sous-modules* en C), avec filtre texte. Clic = scroll jusqu'au commit ; double-clic
-sur une branche locale = checkout.
+**Barre latérale** (M) : *Branches locales · Remotes · Tags · Stashes* (*Worktrees* en C),
+repliables, avec filtre texte. Clic = aller au commit.
 
 ### 3.3 Recherche instantanée
 
-La recherche est la seconde raison d'être de l'outil ; elle doit sembler **gratuite**.
+| ID | Prio | Fonctionnalité |
+|----|------|----------------|
+| F-30 | M | Recherche (⌘/Ctrl+F) au fil de la frappe sur message, sha (préfixe), auteur, refs. |
+| F-31 | M | Modes **surligner** (graph intact, ↵ / ⇧↵ entre résultats, marques dans la minimap) et **filtrer**. |
+| F-32 | M | Correspondance floue (`pndr retard` → « pondère les tâches en retard »), tri pertinence puis date, caractères trouvés surlignés. |
+| F-33 | S | Opérateurs combinables : `author:`, `msg:`, `ref:`, `sha:`, `before:`, `after:`, `merge:yes/no`. |
+| F-34 | S | `path:src/scoring/` : commits ayant modifié ce chemin, en tâche de fond, résultats en streaming. |
+| F-35 | C | `diff:computeUrgency` (équivalent `git log -S/-G`), en tâche de fond, annulable. |
+| F-36 | M | Compteur de résultats et durée (« 4 résultats · 2 ms »). |
+
+**Palette de commandes** (M, ⌘/Ctrl+K) : même moteur, portée élargie aux branches, tags,
+fichiers et **actions** (« Rebase interactif… », « Fetch all »…). Chaque action aboutit à une
+commande générée (§3.6).
+
+### 3.4 Détails de commit et diff (lecture)
 
 | ID | Prio | Fonctionnalité |
 |----|------|----------------|
-| F-30 | M | Champ de recherche (Ctrl/Cmd+F) qui filtre ou surligne au fil de la frappe sur : message, sha (préfixe), auteur (nom + e-mail), noms de refs. |
-| F-31 | M | Deux modes : **surligner** (graph intact, navigation Entrée / Maj+Entrée entre résultats) et **filtrer** (seuls les résultats, graph simplifié). |
-| F-32 | M | Correspondance floue tolérante (`pndr retard` trouve « pondère les tâches en retard »), résultats triés par pertinence puis date. Surlignage des caractères trouvés. |
-| F-33 | S | Opérateurs : `author:julien`, `msg:"cache"`, `ref:feature/`, `sha:4f2a`, `before:2026-06-01`, `after:`, `merge:yes/no`. Combinables. |
-| F-34 | S | Recherche par chemin `path:src/scoring/` (commits ayant modifié ce chemin) — exécutée en tâche de fond, résultats en streaming. |
-| F-35 | C | Recherche dans le contenu des diffs (`diff:computeUrgency`, équivalent `git log -S/-G`) — tâche de fond, annulable. |
-| F-36 | M | Compteur de résultats et durée (« 38 résultats · 3 ms ») : la performance est visible et donc tenue. |
-
-**Palette de commandes** (M, Ctrl/Cmd+K) : même moteur flou, portée élargie — commits, branches,
-tags, fichiers du dépôt, *et actions* (« Rebase interactif… », « Stash », « Fetch all »). C'est le
-point d'entrée clavier de toutes les commandes.
-
-### 3.4 Détails de commit et diff
-
-| ID | Prio | Fonctionnalité |
-|----|------|----------------|
-| F-40 | M | Panneau de détails : message complet, auteur/committer, dates, sha (copie en un clic), parents cliquables, refs, signature (vérifiée ou non). |
-| F-41 | M | Liste des fichiers modifiés (statut A/M/D/R, +/−), en arbre ou à plat. |
-| F-42 | M | Diff d'un fichier : vue unifiée et côte à côte, coloration syntaxique, repli des zones inchangées, ignorer les espaces. |
-| F-43 | S | Diff entre deux commits quelconques (sélection multiple) ou entre un commit et l'arbre de travail. |
+| F-40 | M | Message complet, auteur/committer, dates, sha (copie), parents cliquables, refs, signature vérifiée ou non. |
+| F-41 | M | Fichiers modifiés (A/M/D/R, +/−), en arbre ou à plat. |
+| F-42 | M | Diff unifié et côte à côte, coloration syntaxique, repli des zones inchangées, ignorer les espaces. |
+| F-43 | S | Diff entre deux commits quelconques, ou entre un commit et l'arbre de travail. |
 | F-44 | S | Historique et blame d'un fichier. |
-| F-45 | C | Diff d'images (côte à côte, superposition). |
+| F-45 | M | Changements non commités (WIP) consultables en lecture : fichiers et diff, indexés ou non. |
+| F-46 | C | Diff d'images. |
 
-### 3.5 Arbre de travail, staging, commit
-
-| ID | Prio | Fonctionnalité |
-|----|------|----------------|
-| F-50 | M | Fichiers non indexés / indexés ; stage/unstage par fichier, tout stager, discard (avec confirmation). |
-| F-51 | S | Stage/unstage par hunk et par ligne. |
-| F-52 | M | Zone de message de commit (résumé + corps, compteur 50/72), commit, amend. |
-| F-53 | S | Respect des hooks (`pre-commit`, `commit-msg`), de la signature GPG/SSH et du template de message configurés dans git. Sortie des hooks affichée en cas d'échec. |
-| F-54 | S | Création rapide de commit `fixup!` / `squash!` ciblant un commit sélectionné (pour autosquash). |
-
-### 3.6 Opérations sur branches et remotes
+### 3.5 Identité git (lecture seule)
 
 | ID | Prio | Fonctionnalité |
 |----|------|----------------|
-| F-60 | M | Checkout d'une branche / d'un commit (detached, avec avertissement). Checkout d'une branche distante = création de la branche locale de suivi. |
-| F-61 | M | Créer une branche à n'importe quel commit ; renommer ; supprimer (locale, distante, les deux). |
-| F-62 | M | Fetch (tous les remotes, prune), pull (ff-only / rebase / merge, selon config), push (avec `--force-with-lease` uniquement, jamais `--force` nu), définition de l'upstream au premier push. |
-| F-63 | M | Merge, rebase (non interactif), cherry-pick, revert, reset (soft / mixed / hard). |
-| F-64 | M | Tags : créer (léger/annoté), supprimer, pousser. |
-| F-65 | M | Stash : créer (avec message, inclure non suivis), appliquer, pop, supprimer ; stashes visibles dans le graph. |
-| F-66 | S | Fetch automatique en arrière-plan (intervalle configurable, désactivé par défaut). |
+| F-50 | M | Afficher l'identité effective du dépôt (`user.name`, `user.email`, clé de signature) et **son origine** (`git config --show-origin`) dans la barre d'outils. |
+| F-51 | S | Avertir si l'identité effective ne correspond pas à la règle attendue (ex. e-mail pro dans `~/code/creatiwity/`), avec un lien vers la documentation `includeIf` et un **extrait de config** proposé à copier (`[includeIf "gitdir:~/code/creatiwity/"] path = ~/.gitconfig-creatiwity`). Ramure n'écrit jamais la config. |
 
-### 3.7 Gestes : drag & drop et menu contextuel
+### 3.6 Commandes générées : le principe
 
-**Drag & drop (M pour la matrice de base, S pour le reste).** On glisse une *pastille de ref* ou un
-*commit* sur une *cible*. Au dépôt, un menu court propose les actions valides, la plus probable en
-premier (Entrée pour valider). Pendant le glissement, les cibles valides sont mises en évidence et
-l'action par défaut est prévisualisée en texte (« Rebase feature/scoring sur main »).
+Toute action d'écriture (menu contextuel, drag & drop, palette, bouton) ouvre une **fiche de
+commande** au lieu d'agir :
+
+| ID | Prio | Fonctionnalité |
+|----|------|----------------|
+| F-60 | M | **Commande git native**, colorée (refs dans la couleur de leur branche), copiable en un clic (⌘/Ctrl+C) ou en ↵ depuis la fiche. Plusieurs étapes enchaînées par `&&`. |
+| F-61 | M | **Explication** ligne à ligne des arguments (« `--onto develop` : nouvelle base = develop actuel, 9c2e7f1 »). |
+| F-62 | M | **Aperçu** avant/après du graph concerné (mini-graph). |
+| F-63 | M | **Commande d'annulation** calculée au moment de la génération, avec des sha explicites (`git reset --keep 7a1e0c4`, `git branch -f feat/a 7a1e0c4`). Conservée dans l'historique des commandes. |
+| F-64 | M | Options d'écriture : refs relatives (`feat/a~3`) ou sha explicites ; préfixe `git -C <chemin>` pour éviter de coller dans le mauvais dossier ; dialecte de shell (sh/bash/zsh, fish, PowerShell) pour la citation. |
+| F-65 | M | **Sûreté par défaut** : `--force-with-lease` (jamais `--force` nu), `reset --keep` plutôt que `--hard` quand c'est équivalent, avertissement explicite sur ce qui ne peut pas s'annuler (modifications non commitées). |
+| F-66 | M | **Détection de l'exécution** : le watcher voit les refs bouger et affiche « Commande exécutée : feat/a a été déplacée » avec la commande d'annulation. Si l'état a changé avant l'exécution (refs déplacées), la fiche se marque « périmée » et propose de régénérer. |
+| F-67 | S | Historique des commandes générées (session), avec leur statut (copiée, exécutée détectée) et leur annulation. |
+| F-68 | S | Survol long d'une entrée de menu : la commande s'affiche en infobulle. |
+
+### 3.7 Opérations couvertes (toutes en commandes générées)
+
+| ID | Prio | Opération | Exemple de commande |
+|----|------|-----------|---------------------|
+| F-70 | M | Checkout d'une branche, d'un commit (detached), d'une distante (crée la locale de suivi) | `git switch feature/scoring` |
+| F-71 | M | Créer / renommer / supprimer une branche (locale, distante) | `git branch fix/x d88e1b4` |
+| F-72 | M | Fetch, pull, push (upstream au premier push, force-with-lease si divergente) | `git push --force-with-lease origin feature/scoring` |
+| F-73 | M | Merge, rebase, cherry-pick, revert, reset (soft / mixed / keep / hard) | `git rebase develop` |
+| F-74 | M | Tags : créer, supprimer, pousser | `git tag -a v0.4.1 2aa90d3 -m "v0.4.1"` |
+| F-75 | M | Stash : créer, appliquer, pop, supprimer | `git stash push -u -m "essai layout"` |
+| F-76 | S | Commit `fixup!` ciblant un commit sélectionné (le commit est fait par l'utilisateur) | `git commit --fixup=e27d410` |
+| F-77 | M | Commandes pour une opération en cours : continuer, passer, annuler, prendre *ours*/*theirs* sur un fichier | `git checkout --theirs -- path && git add path` |
+
+### 3.8 Branches empilées et `rebase --onto` assisté
+
+Cas d'usage : `feat/a` est partie de `develop` ; `develop` a été réécrite (rebase sur `main`,
+amend). `feat/a` repose désormais sur des commits qui n'existent plus dans `develop`. Un simple
+`git rebase develop` rejouerait ces anciens commits et produirait des conflits s'ils ont été
+modifiés.
+
+| ID | Prio | Fonctionnalité |
+|----|------|----------------|
+| F-80 | S | **Détection** : pour chaque branche locale et sa base (upstream configurée, ou `develop`/`main`), calcul du point de départ réel via le reflog de la base (`git merge-base --fork-point`) et l'équivalence de patchs (`git cherry`). Les anciens commits de la base apparaissent en pointillé gris « ancienne version de develop ». |
+| F-81 | S | Badge « base réécrite » sur la pastille de la branche, et suggestion en un clic : `git rebase --onto develop feat/a~3 feat/a`, avec le nombre de commits propres calculé et vérifiable dans l'aperçu. |
+| F-82 | S | **Geste manuel** : sélectionner une plage de commits d'une branche (clic puis ⇧clic), la glisser sur la nouvelle base → `git rebase --onto <cible> <premier>~1 <branche>`. |
+| F-83 | S | **Pile de branches** (`feat/a` ← `feat/b` ← `feat/c`) : proposer `--update-refs` pour déplacer toute la pile en une commande (`git rebase --update-refs develop feat/c`). |
+
+### 3.9 Rebase interactif
+
+L'éditeur visuel produit **une seule commande** qui applique la todo préparée, sans éditeur
+interactif :
+
+```sh
+git -c sequence.editor="cp '/tmp/ramure/todo-7f3a'" rebase -i --autosquash main
+```
+
+git invoque l'éditeur de séquence via son propre `sh` (y compris Git for Windows) : `cp`
+remplace la todo par celle de Ramure. Les messages *reword* et *squash* sont appliqués par des
+lignes `exec git commit --amend --only -F '<fichier>'` ajoutées à la todo. Les fichiers
+temporaires sont écrits dans le dossier temporaire de l'application, jamais dans le dépôt.
+
+| ID | Prio | Fonctionnalité |
+|----|------|----------------|
+| F-90 | S | Éditeur de todo : action par ligne (`pick`, `reword`, `edit`, `squash`, `fixup`, `drop`), réordonnancement par glisser ou ⌥↑/↓, raccourcis `p r e s f d`. |
+| F-91 | S | Reword en ligne ; message combiné pour `squash`. |
+| F-92 | S | Aperçu du résultat à droite ; autosquash des `fixup!`/`squash!`. |
+| F-93 | S | Génération de la commande (ci-dessus) avec commande d'annulation (`git reset --keep <sha d'origine>`). |
+| F-94 | M | Bandeau « Rebase en cours — 3/7 » (quel que soit l'outil qui l'a lancé), fichiers en conflit, et commandes `--continue` / `--skip` / `--abort` à copier. |
+
+### 3.10 Drag & drop et menu contextuel
+
+Même matrice qu'en v0.1, chaque action aboutissant à une fiche de commande (F-60) :
 
 | Source → Cible | Actions proposées (ordre) |
 |----------------|---------------------------|
-| Branche locale A → branche B | Rebase A sur B · Merge B dans A · Merge A dans B · Fast-forward B vers A *(si possible)* |
-| Branche locale A → commit C | Rebase A sur C · Reset A à C (soft/mixed/hard) |
-| Branche locale A → sa distante | Push · Push force-with-lease *(si divergente)* |
-| Branche distante → branche locale | Pull / fast-forward · Rebase sur la distante |
+| Branche A → branche B | Rebase A sur B · Merge B dans A · Merge A dans B · Fast-forward B vers A *(si possible)* |
+| Branche A → commit C | Rebase A sur C · Reset A à C |
+| Plage de commits de A → branche/commit B | `rebase --onto` (F-82) |
+| Branche A → sa distante | Push (force-with-lease si divergente) |
 | Commit(s) → branche B | Cherry-pick sur B |
-| Commit C → commit D (même branche) | Rebase interactif : déplacer C après D |
-| Branche → zone « Supprimer » (barre latérale) | Supprimer (confirmation) |
+| Commit C → commit D (même branche) | Rebase interactif pré-rempli (déplacer C après D) |
 
-Si l'action demande un checkout (ex. merge B dans A alors que `HEAD` est ailleurs), Ramure
-l'annonce dans le libellé : « Checkout A puis merge B ».
+Si l'action demande un checkout préalable, la commande l'enchaîne et le libellé l'annonce :
+« Checkout main puis merge feature/scoring ».
 
-**Menu contextuel (M).** Sur un commit :
-checkout · créer une branche ici · créer un tag ici · cherry-pick · revert · reset *branche
-courante* ici ▸ (soft / mixed / hard) · rebase interactif depuis ici · copier le sha / le message ·
-comparer avec l'arbre de travail · créer un commit fixup! pour ce commit.
-
-Sur une pastille de branche : checkout · merge dans courante · rebase courante sur celle-ci ·
-push / pull · renommer · définir l'upstream · supprimer · copier le nom.
-
-Chaque entrée affiche son raccourci clavier quand il existe.
-
-### 3.8 Rebase interactif
-
-| ID | Prio | Fonctionnalité |
-|----|------|----------------|
-| F-80 | S | Éditeur visuel de la todo-list : une ligne par commit, action par ligne (`pick`, `reword`, `edit`, `squash`, `fixup`, `drop`), réordonnancement par glisser ou Alt+↑/↓. |
-| F-81 | S | Raccourcis mono-touche sur la ligne sélectionnée : `p` `r` `e` `s` `f` `d` (comme la todo git). |
-| F-82 | S | Reword inline (éditeur de message dans la ligne) ; pour `squash`, éditeur du message combiné. |
-| F-83 | S | Prévisualisation du graph résultant à droite de l'éditeur (commits fusionnés, supprimés). |
-| F-84 | S | Autosquash : les commits `fixup!`/`squash!` sont placés et typés automatiquement. |
-| F-85 | M | Rebase en cours : bandeau persistant « Rebase en cours — 3/7 · Continuer · Passer · Annuler », quel que soit l'outil qui a lancé le rebase (y compris la CLI). |
-| F-86 | S | Lancement : menu contextuel « Rebase interactif depuis ici », palette, ou glisser un commit sur un autre. |
-
-### 3.9 Conflits
-
-| ID | Prio | Fonctionnalité |
-|----|------|----------------|
-| F-90 | M | Détection de l'état (merge / rebase / cherry-pick / revert en cours) et liste des fichiers en conflit. |
-| F-91 | M | Par fichier : prendre *ours* / *theirs*, ouvrir dans l'outil de merge externe configuré (`git mergetool`) ou l'éditeur, marquer comme résolu. |
-| F-92 | M | Continuer / annuler l'opération en cours. |
-| F-93 | C | Éditeur de conflit intégré 3 volets (ours · résultat · theirs) avec choix par bloc. |
-
-### 3.10 Annuler / rétablir
-
-| ID | Prio | Fonctionnalité |
-|----|------|----------------|
-| F-100 | M | Journal des opérations effectuées via Ramure (ref(s) touchées, valeur avant/après). |
-| F-101 | M | Ctrl/Cmd+Z annule la dernière opération qui a déplacé des refs (reset, rebase, merge, commit, amend, suppression de branche, cherry-pick), avec toast « Rebase de feature/scoring annulé · Rétablir ». |
-| F-102 | M | Refus explicite et motivé quand l'annulation n'est pas sûre (ex. branche déjà poussée depuis, arbre de travail sale) — jamais d'annulation silencieusement partielle. |
-| F-103 | S | Vue « Journal » : liste des opérations + reflog de `HEAD`, restauration d'un état antérieur. |
+**Menu contextuel** d'un commit : checkout · créer une branche ici · créer un tag ici ·
+cherry-pick · revert · reset *branche courante* ici ▸ · rebase interactif depuis ici ·
+`commit --fixup` pour celui-ci · copier le sha / le message · comparer avec l'arbre de travail.
+D'une pastille : checkout · merge dans courante · rebase courante sur celle-ci · rebase `--onto`… ·
+push / pull · renommer · supprimer · copier le nom.
 
 ### 3.11 Clavier
 
-Tout doit être faisable au clavier. Raccourcis par défaut (Cmd sur macOS, Ctrl ailleurs),
-personnalisables :
-
 | Raccourci | Action |
 |-----------|--------|
-| Cmd+K | Palette de commandes |
-| Cmd+F | Recherche dans le graph |
+| ⌘K | Palette de commandes |
+| ⌘F | Recherche dans le graph |
 | ↑ / ↓ · J / K | Commit précédent / suivant |
 | ← / → | Premier parent / premier enfant |
 | H | Aller à `HEAD` |
-| Espace | Ouvrir/fermer le panneau de détails |
-| Cmd+Entrée | Commit (depuis la zone de message) |
-| Cmd+Z / Cmd+Maj+Z | Annuler / rétablir une opération |
-| Cmd+Maj+F / L / P | Fetch / pull / push |
-| Cmd+B | Créer une branche au commit sélectionné |
-| Cmd+Maj+S | Stash |
-| Cmd+1..9 | Onglet de dépôt n |
+| Espace | Panneau de détails |
+| ↵ ou ⌘C (fiche de commande ouverte) | Copier la commande |
+| ⌘Z | Copier la commande d'annulation de la dernière commande exécutée |
+| ⌘B | Branche au commit sélectionné |
+| ⌘1..9 | Onglet de dépôt n |
 
 ### 3.12 Préférences
 
-M : thème (clair / sombre / système), police et taille de l'interface et du code, format de date
-(relatif/absolu), éditeur externe, outil de diff/merge externe, chemin du binaire `git`, langue
-(FR/EN). S : raccourcis, couleurs des lanes, fetch automatique, confirmations désactivables.
+M : thème, police et taille, format de date, éditeur externe (ouvrir un fichier), dialecte de
+shell, préfixe `git -C`, refs relatives ou sha, branches de tronc, langue (FR/EN).
+S : raccourcis, couleurs des lanes, mode couleur par défaut (focus / arc-en-ciel).
 
 ---
 
 ## 4. Exigences non fonctionnelles
 
-### 4.1 Performance (dépôt de référence : 100 k commits, 2 k refs ; stress : 1 M commits type noyau Linux)
+### 4.1 Performance (référence : 100 k commits, 2 k refs ; stress : 1 M commits)
 
 | Indicateur | Cible 100 k | Cible 1 M |
 |------------|-------------|-----------|
-| Premier affichage du graph (dépôt déjà ouvert une fois) | < 1 s | < 2 s |
-| Premier affichage (à froid) | < 2 s | < 5 s (streaming, UI utilisable avant la fin) |
-| Recherche par frappe (message/sha/auteur/ref) | < 16 ms | < 60 ms |
-| Défilement | 60 fps constant | 60 fps constant |
-| Rafraîchissement après une opération (ex. commit) | < 150 ms | < 400 ms |
+| Premier affichage (à chaud) | < 1 s | < 2 s |
+| Premier affichage (à froid) | < 2 s | < 5 s, UI utilisable pendant le streaming |
+| Recherche par frappe | < 16 ms | < 60 ms |
+| Défilement | 60 fps | 60 fps |
+| Mise à jour après une commande exécutée dans le terminal | < 150 ms | < 400 ms |
 | Mémoire | < 300 Mo | < 1,2 Go |
 
-Un **benchmark automatisé** (dépôts de référence clonés en CI) mesure ces indicateurs à chaque
-release ; une régression > 20 % bloque la release.
+Benchmark automatisé en CI sur des dépôts de référence ; une régression > 20 % bloque la release.
 
 ### 4.2 Plateformes
 
-macOS (Apple Silicon + Intel, ≥ 12), Windows 10/11 (x64, arm64), Linux (AppImage + .deb, X11 et
-Wayland). Mises à jour via le plugin updater de Tauri (canal stable + beta).
+macOS (≥ 12, Apple Silicon et Intel), Windows 10/11 (x64, arm64), Linux (AppImage, .deb, X11 et
+Wayland). git ≥ 2.38 requis (pour `--update-refs`), vérifié au démarrage.
 
-### 4.3 Fiabilité et sécurité
+### 4.3 Sécurité et confidentialité
 
-- **Fidélité git** : toute opération d'écriture passe par le binaire `git` de l'utilisateur
-  (voir §5.2) → hooks, config, credential helpers, signature et `.gitattributes` respectés.
-- Aucune donnée ne quitte la machine : pas de télémétrie, pas de compte, pas d'avatar distant par
-  défaut. Les seules requêtes réseau sont les commandes git (fetch/pull/push) et la vérification de
-  mises à jour (désactivable).
-- Identifiants : délégués à git (ssh-agent, credential manager du système). Les invites HTTPS
-  passent par un helper `GIT_ASKPASS` qui affiche un dialogue Ramure ; rien n'est stocké par
-  Ramure.
-- Tauri : capabilities minimales (pas d'accès shell arbitraire depuis le front, liste blanche de
-  commandes Rust), CSP stricte.
-- Les opérations destructrices (reset hard, discard, suppression de branche non mergée, push
-  force-with-lease) demandent une confirmation, sauf si l'utilisateur l'a désactivée.
+- **Aucune écriture dans le dépôt**, aucune exécution de commande d'écriture git.
+- **Aucune requête réseau**, hors vérification de mise à jour (désactivable).
+- Aucun identifiant manipulé ni stocké.
+- Tauri : capabilities minimales, pas d'accès shell depuis le front, CSP stricte. Le seul
+  processus lancé est `git` en lecture (`log`, `cherry`, `merge-base`, `config --show-origin`)
+  quand `gix` ne suffit pas.
+- Commandes générées : citation stricte des arguments selon le dialecte de shell (noms de
+  branches avec caractères spéciaux), testée par des tests de propriété.
 
 ### 4.4 Accessibilité et i18n
 
-Navigation clavier complète, focus visible, contrastes WCAG AA dans les deux thèmes, couleurs de
-lanes distinguables en daltonisme (palette testée deutéranopie/protanopie, et motif en complément
-de la couleur pour `HEAD` et WIP). Interface en français et anglais dès le MVP (fichiers de
-traduction `vue-i18n`).
+Navigation clavier complète, focus visible, contrastes WCAG AA dans les deux thèmes, formes en
+plus des couleurs (D8), palette vérifiée en daltonisme. FR et EN dès le MVP.
 
 ---
 
@@ -287,132 +327,86 @@ traduction `vue-i18n`).
 
 ```
 ┌──────────────────────── Webview (Vue 3 + TS) ─────────────────────────┐
-│  GraphCanvas (Canvas 2D)  │ VirtualRows (DOM)  │ Panels, Palette, DnD │
-│            ▲ Pinia stores (repo, graph, search, ops, ui)              │
+│  RefsColumn │ GraphCanvas │ VirtualRows │ Panels · Palette · CmdSheet │
+│            ▲ Pinia stores (repo, graph, search, commands, ui)         │
 └────────────┼──────────────────────────────────────────────────────────┘
-             │ Tauri IPC : commands (typées via tauri-specta) + Channels (streaming)
+             │ Tauri IPC : commands typées (tauri-specta) + Channels (streaming)
 ┌────────────┼──────────────────── Core Rust ───────────────────────────┐
-│  repo::   gix (lecture : revwalk, objets, refs, status, diff)         │
-│  graph::  topo-order + attribution des lanes → lignes compactes       │
-│  search:: index colonnaire en mémoire + nucleo (flou) + rayon         │
-│  ops::    exécution `git` CLI, parsing de progression, journal undo   │
-│  watch::  notify (debounce) → invalidation incrémentale               │
-│  askpass/sequence-editor : helpers (le binaire Ramure en mode helper) │
+│  repo::    gix en lecture (revwalk, refs, objets, status, diff, config)│
+│  graph::   topo-order, lanes straight-branches, couleurs, chunks       │
+│  stack::   fork-point, équivalence de patchs, piles de branches        │
+│  search::  index colonnaire + nucleo + rayon                           │
+│  cmdgen::  construction des commandes, citation par shell, undo        │
+│  watch::   notify (debounce) → invalidation incrémentale, détection    │
 └───────────────────────────────────────────────────────────────────────┘
 ```
 
-### 5.2 Accès git : lecture en natif, écriture via la CLI
+### 5.2 Accès git
 
 | Besoin | Choix | Raison |
 |--------|-------|--------|
-| Lire l'historique, les refs, les objets, les diffs, le status | **gitoxide (`gix`)** | Pur Rust, très rapide, multi-thread, pas de dépendance C ; parcours de 1 M commits en quelques centaines de ms avec le commit-graph. |
-| Écrire : commit, merge, rebase (interactif), cherry-pick, reset, stash, fetch/pull/push | **binaire `git` système** | Comportement identique à la CLI (hooks, config, signature, credential helpers, LFS). libgit2/`git2` ne gère pas le rebase interactif ni les hooks de façon fidèle. |
-| Fallback lecture | `git` CLI | Si `gix` ne supporte pas une extension du dépôt (ex. format d'index exotique), on bascule sans casser l'UI. |
+| Historique, refs, objets, diffs, status, config | **gitoxide (`gix`)** | Pur Rust, rapide, multi-thread ; utilise le fichier `commit-graph`. |
+| Fork-point, `cherry`, cas non couverts par `gix` | binaire `git` en lecture | Même résultat que la CLI de l'utilisateur. |
+| Écriture | **aucune** : `cmdgen` produit du texte | Contexte d'exécution = le terminal de l'utilisateur. |
 
-La version minimale de git requise est vérifiée au démarrage (cible : git ≥ 2.38 pour
-`--update-refs`).
+### 5.3 Graph
 
-### 5.3 Graph : calcul des lanes en Rust, rendu hybride
-
-- **Ordre** : `--topo-order` avec départage par date (identique au graph de GitKraken / `git log
-  --graph`), utilise le fichier `commit-graph` quand présent (générations → tri incrémental).
-- **Attribution des lanes** (O(n × largeur)) : on maintient un tableau des lanes actives, chaque
-  lane « attend » un commit. Un commit prend la première lane qui l'attend (sinon une lane libre) ;
-  son premier parent hérite de la lane ; chaque parent supplémentaire (merge) réutilise la lane qui
-  l'attend déjà, sinon prend une lane libre. Les lanes libérées sont réutilisées au plus tôt pour
-  garder le graph étroit.
-- **Couleur** : attribuée par *branche logique* (chaîne de premiers parents) et non par colonne,
-  pour qu'une branche garde sa couleur quand elle change de colonne. Hash stable du nom de ref
-  la plus proche → palette de 8 couleurs.
-- **Format transmis au front** : tableaux compacts (typed arrays sérialisés en binaire via
-  `tauri::ipc::Channel`/`Response` brut) par tranche de 5 000 lignes : `lane`, `color`, et
-  segments d'arêtes `(fromLane, toLane, kind)` par ligne. Le texte (message, auteur, date) est
-  demandé à la demande pour la fenêtre visible + marge.
-- **Rendu** : la colonne graph est un `<canvas>` redessiné pour la fenêtre visible uniquement ;
-  les colonnes texte sont une liste DOM virtualisée (sélection de texte, accessibilité, menus
-  contextuels natifs). Le canvas et la liste partagent la même hauteur de ligne fixe (28 px) et le
-  même scroll.
-- **Incrémental** : après une opération ou un fetch, seules les lignes au-dessus du plus ancien
-  commit modifié sont recalculées.
+- Ordre `--topo-order` départagé par date ; lanes *straight branches* (réf. pvigier) avec tronc
+  épinglé ; couleur par branche logique (hash stable du nom de ref la plus proche).
+- Transmission au front en tableaux compacts par tranches de 5 000 lignes (lane, couleur,
+  segments d'arêtes, indicateurs de refs) ; texte à la demande pour la fenêtre visible.
+- Rendu : colonne refs et texte en DOM virtualisé, graph en `<canvas>` ; hauteur de ligne fixe
+  (28 px, compact 22 px) et scroll partagé. Largeur de graph constante (D2).
+- Recalcul incrémental au-dessus du plus ancien commit modifié.
 
 ### 5.4 Recherche
 
-- À l'ouverture, construction d'un **index colonnaire** en mémoire (Rust) : `Vec` de sha, résumé,
-  auteur, e-mail, timestamp, et une table refs → lignes. ~100 octets/commit → ~10 Mo pour 100 k.
-- Correspondance floue avec **`nucleo`** (moteur du picker de Helix), parallélisé avec **`rayon`**,
-  annulation de la requête précédente à chaque frappe (token de génération).
-- Retour au front : indices de lignes + positions des caractères surlignés, limités à la fenêtre
-  visible (le compteur total est calculé à part).
-- `path:` et `diff:` : tâches de fond streamées (Channel), annulables, jamais bloquantes.
+Index colonnaire en mémoire (~100 octets/commit), `nucleo` + `rayon`, annulation à chaque
+frappe ; `path:` et `diff:` streamés en tâche de fond.
 
-### 5.5 Opérations et rebase interactif
+### 5.5 Génération de commandes (`cmdgen`)
 
-- Chaque opération = une commande Rust typée (`ops::rebase { onto, branch, interactive }`, …) qui
-  construit la ligne de commande git, streame la progression (`--progress` parsé) et renvoie un
-  résultat structuré (succès, conflit, refus de hook + sortie).
-- **Rebase interactif** : Ramure lance `git rebase -i` avec
-  `GIT_SEQUENCE_EDITOR="<ramure> --sequence-editor <fichier todo préparé>"` : le binaire Ramure,
-  en mode helper, remplace la todo par celle éditée dans l'UI. Même principe pour `GIT_EDITOR`
-  (messages reword/squash) et `GIT_ASKPASS`. On reste 100 % compatible avec le rebase de git
-  (`--autosquash`, `--update-refs`, `exec`).
-- **Journal d'undo** : avant chaque opération, snapshot des refs concernées + `HEAD` + état de
-  l'index (stash interne si nécessaire). Annuler = `git update-ref` / `reset` vers le snapshot
-  après vérifications (§3.10).
-- Une seule opération d'écriture à la fois par dépôt (file d'attente), les lectures restent
-  concurrentes.
+- Chaque action est un type Rust (`Rebase { branch, onto, upstream, interactive, update_refs }`,
+  …) qui produit : la commande (liste d'arguments, jamais une chaîne concaténée), son
+  explication, l'aperçu attendu (refs après exécution), la commande d'annulation et les
+  préconditions (refs attendues à leurs sha actuels).
+- Rendu texte par dialecte de shell (sh, fish, PowerShell) au dernier moment.
+- **Détection** : le watcher compare l'état des refs aux préconditions et au résultat attendu →
+  statut « exécutée » ou « périmée ».
+- Tests : chaque commande générée est exécutée en CI sur des dépôts fixtures et le graph obtenu
+  est comparé à l'aperçu annoncé.
 
 ### 5.6 Front
 
-- Vue 3 (Composition API) + TypeScript strict + Vite, **Pinia** pour l'état.
-- Bindings TS générés depuis les types Rust (`tauri-specta`) : aucune commande IPC écrite à la main.
-- Diff : **CodeMirror 6** (vue diff/merge, coloration syntaxique, performances sur gros fichiers).
-- Drag & drop : implémentation maison sur Pointer Events (le DnD HTML5 natif est limité dans les
-  webviews et ne permet pas la prévisualisation riche).
-- Pas de framework UI lourd : composants maison sur tokens CSS (voir planche design).
-- Tests : Vitest (unitaires), Playwright sur le build web avec un backend mocké (parcours clés).
+Vue 3 (Composition API) + TypeScript strict + Vite, Pinia, bindings générés par `tauri-specta`,
+CodeMirror 6 pour les diffs, drag & drop maison sur Pointer Events, composants maison sur tokens
+CSS. Tests : Vitest, Playwright sur le build web avec backend mocké.
 
 ### 5.7 Arborescence cible
 
 ```
 ramure/
-├── src-tauri/
-│   ├── src/
-│   │   ├── main.rs            # entrée app + modes helper (--sequence-editor, --askpass)
-│   │   ├── repo/              # ouverture, refs, status (gix)
-│   │   ├── graph/             # topo-order, lanes, couleurs, chunks
-│   │   ├── search/            # index + requêtes
-│   │   ├── ops/               # commandes git CLI, progression, undo
-│   │   ├── watch.rs
-│   │   └── ipc.rs             # commandes Tauri exportées (specta)
-│   ├── benches/               # criterion : lanes, recherche
-│   └── tauri.conf.json
-├── src/                       # Vue
-│   ├── components/graph/      # GraphCanvas, VirtualRows, RefPill
-│   ├── components/panels/     # CommitDetails, Diff, Staging, RebaseEditor
-│   ├── components/overlay/    # CommandPalette, ContextMenu, DropMenu, Toasts
-│   ├── stores/
-│   ├── bindings.ts            # généré
-│   └── styles/tokens.css
-└── fixtures/                  # scripts de génération de dépôts de test
+├── src-tauri/src/
+│   ├── main.rs
+│   ├── repo/  graph/  stack/  search/  cmdgen/
+│   ├── watch.rs
+│   └── ipc.rs
+├── src-tauri/benches/
+├── src/components/{graph,panels,overlay}/
+├── src/stores/  src/bindings.ts  src/styles/tokens.css
+└── fixtures/              # scripts de dépôts de test (piles, rebases, merges)
 ```
 
 ---
 
-## 6. UX — principes directeurs
+## 6. UX : principes directeurs
 
-1. **Le graph est l'écran.** Pas de tableau de bord, pas d'écran d'accueil superflu : on ouvre un
-   dépôt, on voit le graph.
-2. **Rapide et prévisible avant d'être joli.** Toute action affiche son effet en < 100 ms ou une
-   progression.
-3. **Dire ce qui va se passer.** Drag & drop et menus annoncent la commande exacte (« Rebase
-   feature/scoring sur main ») ; un survol long affiche la commande git équivalente.
-4. **Tout est réversible ou confirmé.** Ctrl+Z par défaut, confirmation seulement pour ce qui ne
-   peut pas s'annuler (push, discard).
-5. **Clavier d'abord, souris confortable.** Chaque action du menu contextuel existe dans la
-   palette.
-6. **Densité réglable.** Lignes de 28 px par défaut, mode compact 22 px.
-
-Détails visuels, composants et maquettes : [`design-board.html`](./design-board.html).
+1. **Le graph est l'écran**, et il est lisible avant d'être dense (`ux-graph.md`).
+2. **Dire exactement ce qui va se passer** : chaque geste aboutit à une commande lisible,
+   expliquée, avec son aperçu.
+3. **Toujours une sortie** : chaque commande vient avec sa commande d'annulation.
+4. **Clavier d'abord** : tout geste existe dans la palette.
+5. **Aucune surprise** : rien ne touche le dépôt sans que l'utilisateur colle la commande.
 
 ---
 
@@ -420,14 +414,11 @@ Détails visuels, composants et maquettes : [`design-board.html`](./design-board
 
 | Phase | Durée indicative | Contenu | Sortie |
 |-------|------------------|---------|--------|
-| **0 — Spike** | 1–2 sem. | Tauri + `gix` : revwalk + lanes + rendu canvas virtualisé sur un dépôt de 1 M commits ; mesure recherche `nucleo`. | Go/no-go sur les cibles de perf §4.1 |
-| **1 — MVP lecture** | 3–4 sem. | F-01..04, F-10..15, F-30..32, F-36, palette, F-40..42, barre latérale, thèmes. | Utilisable en *visualiseur* à côté de la CLI |
-| **2 — MVP écriture** | 4 sem. | F-50, F-52, F-60..65, menus contextuels, F-85, F-90..92, F-100..102. | Remplace GitKraken pour la majorité des gestes |
-| **3 — V1** | 4–6 sem. | Drag & drop complet, rebase interactif (F-80..86), F-16..19, F-33..34, F-43..44, F-51, F-53..54, onglets, updater, i18n EN. | **Résiliation GitKraken** |
-| **4 — V2** | continu | Éditeur de conflits intégré, F-20, F-35, F-45, worktrees, sous-modules, intégration PR GitHub/GitLab (lecture). | — |
-
-Extraction vers un dépôt dédié `Creatiwity/ramure` au démarrage de la phase 1 (le dossier de
-l'incubator devient alors un README pointant vers ce dépôt).
+| **0 — Spike** | 1–2 sem. | `gix` + lanes + rendu canvas virtualisé sur 1 M commits ; prototype de la mise en page refs · graph · texte ; mesure `nucleo`. | Go/no-go perf + test utilisateur rapide (`ux-graph.md` §5) |
+| **1 — Viewer** | 3–4 sem. | F-01..04, F-10..17, F-26, F-30..32, F-36, palette, F-40..42, F-45, F-50, barre latérale, thèmes. Extraction en dépôt public. | Utilisable en viewer à côté du terminal |
+| **2 — Commandes** | 3–4 sem. | F-60..66, F-70..75, F-77, menus contextuels, drag & drop de base, F-94. | **Remplace GitKraken** pour la majorité des gestes |
+| **3 — V1** | 4 sem. | F-80..83 (`--onto`, piles), F-90..93 (rebase interactif), F-18..24, F-33..34, F-43..44, F-51, F-67..68, onglets, updater, EN. | **Résiliation GitKraken**, release publique 1.0 |
+| **4 — Ensuite** | continu | F-25, F-35, F-46, worktrees, sous-modules ; réévaluer l'exécution directe (§10). | — |
 
 ---
 
@@ -435,37 +426,57 @@ l'incubator devient alors un README pointant vers ce dépôt).
 
 | Risque | Impact | Parade |
 |--------|--------|--------|
-| `gix` incomplet sur certains dépôts (index v4, sparse, partial clone) | Moyen | Fallback lecture via CLI (§5.2) ; suite de dépôts de test variés en CI. |
-| Performance du rendu webview (surtout WebKitGTK sur Linux) | Élevé | Canvas pour le graph, DOM minimal, spike phase 0 sur les 3 OS avant d'engager la suite. |
-| Différences de webview entre OS (WebView2, WKWebView, WebKitGTK) | Moyen | Pas d'API web exotique ; tests Playwright + smoke tests manuels par OS à chaque release. |
-| Rebase interactif : cas limites (exec, update-refs, conflits en chaîne) | Moyen | S'appuyer sur git lui-même (sequence editor) plutôt que réimplémenter ; bandeau d'état universel. |
-| Undo trompeur après push ou modifications externes | Élevé | Règles de refus explicites (F-102) et tests dédiés. |
-| Signature de code (macOS notarization, Windows) | Faible/moyen | Certificats à prévoir avant la V1 ; builds CI GitHub Actions `tauri-action`. |
-| Effort de maintenance interne | Moyen | Périmètre strict (§1.2) ; ouverture en open source envisageable pour mutualiser. |
+| Coller une commande dans le mauvais dossier ou sur un état qui a changé | Élevé | Option `git -C <chemin>` ; sha explicites en option ; fiche marquée « périmée » quand les refs ont bougé ; commande d'annulation toujours fournie. |
+| Friction du copier-coller pour les gestes très fréquents (checkout, fetch) | Moyen | Mesurer à l'usage ; si besoin, exécution directe d'une liste blanche de commandes non destructives (question ouverte §10). |
+| Citation incorrecte sous PowerShell ou fish | Moyen | Arguments structurés + tests de propriété par dialecte. |
+| Détection de fork-point faussée (reflog expiré, branche clonée récemment) | Moyen | Croiser fork-point et équivalence de patchs ; toujours montrer l'aperçu ; ne jamais proposer sans aperçu vérifiable. |
+| `gix` incomplet sur certains dépôts | Moyen | Fallback lecture via la CLI ; fixtures variées en CI. |
+| Performance du rendu (surtout WebKitGTK) | Élevé | Canvas pour le graph, DOM minimal, spike sur les 3 OS. |
+| Maintenance d'un projet open source | Moyen | Périmètre strict (§1.3) ; contributions externes bienvenues. |
 
 ---
 
-## 9. Critères d'acceptation du MVP
+## 9. Critères d'acceptation
 
-- [ ] Ouvrir le dépôt de référence 100 k commits : graph visible en < 1 s à chaud, défilement 60 fps
-      sur les 3 OS.
-- [ ] Taper `pndr retard` dans la recherche surligne le bon commit en < 16 ms par frappe.
-- [ ] Les couleurs de lanes restent stables après un fetch et après redémarrage.
-- [ ] Commit, amend, checkout, création/suppression de branche, fetch/pull/push, merge, rebase,
-      cherry-pick, reset, stash fonctionnent et respectent les hooks et la signature configurés.
-- [ ] Un rebase lancé en CLI est détecté et pilotable (continuer/annuler) depuis Ramure.
-- [ ] Ctrl+Z annule un reset hard, un rebase et une suppression de branche, et refuse avec un
-      message clair quand ce n'est pas sûr.
-- [ ] Aucune requête réseau hors commandes git et vérification de mise à jour (vérifié au proxy).
+**MVP viewer (fin de phase 1)**
+
+- [ ] Dépôt de 100 k commits : graph en < 1 s à chaud, 60 fps sur les 3 OS.
+- [ ] Tous les messages commencent au même x, quelles que soient les refs et la position de défilement.
+- [ ] `pndr retard` surligne le bon commit en < 16 ms par frappe.
+- [ ] Couleurs de lanes stables après un fetch et après redémarrage.
+- [ ] Identité effective et son origine affichées.
+- [ ] Aucune écriture dans le dépôt, aucune requête réseau (vérifié par un test d'intégration et au proxy).
+
+**Commandes (fin de phase 2)**
+
+- [ ] Chaque opération F-70..77 produit une commande qui, exécutée sur les fixtures, donne exactement le graph annoncé dans l'aperçu.
+- [ ] Chaque commande a une commande d'annulation qui restaure les refs d'origine.
+- [ ] Un rebase lancé à la main est détecté, avec les commandes continuer/passer/annuler.
+- [ ] Citation correcte sous bash, zsh, fish et PowerShell pour des noms de branche avec espaces, guillemets et caractères non ASCII.
+
+**V1**
+
+- [ ] Sur le scénario `develop` réécrite, Ramure propose `git rebase --onto develop feat/a~3 feat/a` et le résultat ne contient que les 3 commits de `feat/a`.
 
 ---
 
-## 10. Questions ouvertes
+## 10. Décisions et questions ouvertes
 
-1. **Licence** : outil interne ou open source dès le départ (MIT/Apache-2.0) ? L'open source aide
-   à la maintenance mais impose un minimum de soin sur la doc et les issues.
-2. **Intégration PR** GitHub/GitLab : utile en V2 (voir les PR sur les branches du graph) ou hors
-   périmètre définitif ?
-3. **Profils git** (identités multiples perso/pro par dépôt) : besoin réel dans l'équipe ?
-4. **Nom** : « Ramure » est un nom de code ; vérifier la disponibilité avant publication.
-5. Faut-il un **mode « terminal intégré »** ou renvoyer vers le terminal du système (ouvrir ici) ?
+**Décidé (v0.2)**
+
+| Sujet | Décision |
+|-------|----------|
+| Licence | Open source, MIT OR Apache-2.0 |
+| Services externes | Aucune intégration, durablement |
+| Profils git | Gérés par git (`includeIf`) ; Ramure lit et affiche seulement |
+| Terminal | Non intégré ; commandes générées à coller |
+| Vue du graph | Refs · graph · texte, messages alignés (`ux-graph.md`) |
+
+**Ouvert**
+
+1. **Staging et commit** : confirmer qu'ils restent hors périmètre (faits dans l'IDE ou le
+   terminal), Ramure ne montrant que le WIP en lecture.
+2. **Exécution directe** plus tard, pour une liste blanche de commandes non destructives
+   (`fetch`, `switch`, `branch`) avec la même fiche de commande ? À décider après 1 mois d'usage.
+3. **Licence exacte** : double MIT/Apache-2.0 proposée ; à valider.
+4. **Nom** : « Ramure » est un nom de code ; vérifier la disponibilité (crates.io, npm, domaine).
