@@ -240,9 +240,10 @@ un onglet) :
 | Terminal.app | macOS | AppleScript (`do script … in` un onglet) ; permission Automation | non | oui | oui | S |
 | Windows Terminal | Windows | `wt.exe -w 0 nt -d <dépôt>` : ne sait pas écrire dans un onglet existant | non | nouvel onglet uniquement | oui | S |
 | Konsole | Linux | D-Bus (`runCommand` sur une session) | partiel | oui | oui | C |
-| Autres (Ghostty, Warp, GNOME Terminal, terminal de VS Code…) | — | selon les API disponibles ; à défaut, niveau 0 | — | — | — | C |
+| Warp | macOS, Linux, Windows | Pas d'API d'envoi (ni AppleScript, ni CLI) ; Ramure écrit une *launch configuration* temporaire (`cwd` + `exec`) et l'ouvre via `warp://launch/<chemin>` ; `warp://action/new_tab?path=` pour un onglet vide | non | nouvel onglet uniquement | oui | C |
+| Autres (Ghostty, GNOME Terminal, terminal de VS Code…) | — | selon les API disponibles ; à défaut, niveau 0 | — | — | — | C |
 
-Pour les terminaux sans API d'envoi (Windows Terminal), le niveau 1 se limite à « ouvrir un
+Pour les terminaux sans API d'envoi (Windows Terminal, Warp), le niveau 1 se limite à « ouvrir un
 onglet dans le dépôt et y lancer la commande », signalé comme tel dans le réglage.
 
 ### 3.8 Opérations couvertes (toutes en commandes générées)
@@ -568,7 +569,13 @@ ramure/
 
 1. **Staging et commit** : confirmer qu'ils restent hors périmètre (faits dans l'IDE ou le
    terminal), Ramure ne montrant que le WIP en lecture.
-2. **Niveau 1 et commandes non annulables** : préremplir sans Entrée (proposé) ou exécuter
-   comme les autres après une confirmation dans Ramure ?
-3. **Licence exacte** : double MIT/Apache-2.0 proposée ; à valider.
-4. **Nom** : « Ramure » est un nom de code ; vérifier la disponibilité (crates.io, npm, domaine).
+2. **Niveau 1 et commandes qui détruisent du travail** (ex. `git reset --hard` alors que des
+   fichiers modifiés n'ont pas été commités : ces modifications sont perdues, et `⌘Z` ne peut
+   rétablir que la branche, pas les fichiers). Deux options : Ramure tape la commande dans le
+   terminal **sans appuyer sur Entrée** et l'utilisateur valide lui-même (proposé), ou Ramure
+   demande une **confirmation dans sa propre fenêtre** puis exécute comme les autres commandes.
+3. **Warp** : l'intégration ne peut qu'ouvrir un nouvel onglet par commande (voir §3.7). À
+   confirmer par un essai (bug signalé sur les chemins de launch configurations personnalisés)
+   et à juger à l'usage : un onglet par commande risque d'être pénible pour les gestes fréquents.
+4. **Licence exacte** : double MIT/Apache-2.0 proposée ; à valider.
+5. **Nom** : « Ramure » est un nom de code ; vérifier la disponibilité (crates.io, npm, domaine).
