@@ -424,7 +424,7 @@ body.alt .althint .on{display:inline}
 <header class="top">
   <div class="masthead">
     <div class="id">
-      <span class="eyebrow">Creatiwity Incubator · planche design v0.3 · open source</span>
+      <span class="eyebrow">Creatiwity Incubator · planche design v0.4 · open source</span>
       <h1>Ramure</h1>
       <p class="lede">Viewer git de bureau (Tauri · Rust · Vue) centré sur un commit graph très lisible. Les gestes (glisser, menu, palette) produisent des commandes git natives, copiées (niveau 0) ou exécutées dans votre terminal (niveau 1). Ramure ne modifie jamais le dépôt lui-même.</p>
     </div>
@@ -637,10 +637,11 @@ body.alt .althint .on{display:inline}
             </div>
             <div class="eyebrow" style="font-size:10.5px">Terminal · intégrations détectées</div>
             <div class="tlist">
+              <div class="trow"><span class="radio"></span><b>Terminal.app</b><span class="d">Terminal par défaut du système · toujours disponible</span><span class="state ok">Socle</span></div>
               <div class="trow on"><span class="radio"></span><b>iTerm2</b><span class="d">AppleScript · permission Automation accordée</span><span class="state ok">Disponible</span></div>
               <div class="trow"><span class="radio"></span><b>tmux</b><span class="d">3 sessions, 7 panes</span><span class="state ok">Disponible</span></div>
               <div class="trow"><span class="radio"></span><b>kitty</b><span class="d">Ajouter <span class="mono">allow_remote_control yes</span> à kitty.conf</span><span class="state warn">À configurer</span></div>
-              <div class="trow"><span class="radio"></span><b>Terminal.app</b><span class="d">Permission Automation à accorder au premier envoi</span><span class="state warn">Permission requise</span></div>
+              <div class="trow off"><span class="radio"></span><b>Warp</b><span class="d">Nouvel onglet par commande uniquement (pas d'API d'envoi)</span><span class="state no">Limité</span></div>
               <div class="trow off"><span class="radio"></span><b>WezTerm</b><span class="d">Non installé</span><span class="state no">Absent</span></div>
             </div>
             <div class="eyebrow" style="font-size:10.5px">Cible dans iTerm2</div>
@@ -650,6 +651,7 @@ body.alt .althint .on{display:inline}
               <div class="target"><span class="radio" style="width:12px;height:12px;border-radius:50%;border:1.5px solid var(--ink-3)"></span><span>Fenêtre 2 · onglet 1</span><span class="cwd">~</span><span class="state no">zsh · ajoutera git -C</span></div>
               <div class="target"><span class="radio" style="width:12px;height:12px;border-radius:50%;border:1.5px solid var(--ink-3)"></span><span><svg class="i" style="vertical-align:-2px"><use href="#i-plus"/></svg> Ouvrir un nouvel onglet dans le dépôt</span><span class="cwd"></span><span></span></div>
             </div>
+            <div class="check"><i></i><span>Utiliser mon shell avec sa config complète : <span class="mono">zsh -l -i</span> (<span class="mono">.zshrc</span>, oh-my-zsh, alias, PATH, agent SSH), comme dans Warp ou iTerm2.</span></div>
             <div class="check"><i></i><span>Préremplir sans valider les commandes non annulables (reset hard avec modifications, discard, push force-with-lease) : vous appuyez sur Entrée dans le terminal.</span></div>
           </div>
         </div>
@@ -676,7 +678,7 @@ body.alt .althint .on{display:inline}
     </div>
   </div>
   <div class="notes">
-    <ul><li>Intégrations prévues : tmux, WezTerm, kitty, iTerm2, Terminal.app, Windows Terminal (nouvel onglet seulement), Konsole plus tard.</li><li>Chaque intégration déclare ses capacités ; l'UI n'affiche que ce qui marche.</li></ul>
+    <ul><li>Socle toujours disponible : le terminal par défaut du système (Terminal.app, Windows Terminal, terminal Linux par défaut), avec votre shell et toute sa config.</li><li>Ensuite : tmux, WezTerm, kitty, iTerm2 ; Warp et Konsole limités ou plus tard.</li><li>Chaque intégration déclare ses capacités ; l'UI n'affiche que ce qui marche.</li></ul>
     <ul><li>La cible dont le dossier est le dépôt est présélectionnée ; sinon la commande est préfixée par <span class="mono">git -C</span>.</li><li>Pas d'envoi si un programme occupe la cible : repli sur la copie.</li></ul>
     <ul><li>Ramure ne lit pas la sortie du terminal : la confirmation vient du watcher, comme au niveau 0.</li><li>La pastille verte de la barre d'outils rappelle la cible ; <kbd>⌥</kbd> clic dessus repasse au niveau 0 pour la session.</li></ul>
   </div>
@@ -891,7 +893,7 @@ body.alt .althint .on{display:inline}
   </div>
 </section>
 
-<footer><span>Ramure · planche design v0.3 · septembre 2026 · MIT OR Apache-2.0</span><span>Références : spec-ramure.md (F-xx), ux-graph.md (D1–D8)</span><span>Données d'exemple fictives inspirées du projet sherpa</span></footer>
+<footer><span>Ramure · planche design v0.4 · septembre 2026 · MIT OR Apache-2.0</span><span>Références : spec-ramure.md (F-xx), ux-graph.md (D1–D8)</span><span>Données d'exemple fictives inspirées du projet sherpa</span></footer>
 </div>
 
 <script>

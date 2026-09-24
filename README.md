@@ -1,6 +1,6 @@
 # ramure *(nom de code)*
 
-> Statut : **spécification** — spec v0.3 · open source (MIT OR Apache-2.0)
+> Statut : **spécification** — spec v0.4 · open source (MIT OR Apache-2.0)
 
 ## Résumé
 
@@ -12,7 +12,8 @@ instantanée**, le lancement de **rebase** et les commandes git courantes par **
 Ramure lit le dépôt (`gix`) et **ne le modifie jamais** : chaque geste produit une **commande git
 native** expliquée, avec aperçu et commande d'annulation (y compris `git rebase --onto` pour les
 branches empilées). Niveau 0 : la commande est copiée. Niveau 1 : elle est exécutée dans le
-terminal externe choisi (tmux, iTerm2, WezTerm, kitty…), ⌥ pour copier à la place. Aucune intégration de service externe, aucune
+terminal choisi (au minimum le terminal par défaut du système, puis tmux, iTerm2, WezTerm, kitty…),
+toujours dans le shell de l’utilisateur avec sa config (oh-my-zsh, alias…), ⌥ pour copier à la place. Aucune intégration de service externe, aucune
 requête réseau, identités gérées par la config git (`includeIf`).
 
 Ce projet a vocation à être extrait dans son propre dépôt public (`Creatiwity/ramure`) au

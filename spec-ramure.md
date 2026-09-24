@@ -1,7 +1,16 @@
 # Ramure : cahier des charges
 
-> Version 0.3 · Statut : **spécification** (draft à challenger)
+> Version 0.4 · Statut : **spécification** (draft à challenger)
 > Planche design : [`design-board.html`](./design-board.html) · Lisibilité du graph : [`ux-graph.md`](./ux-graph.md)
+
+### Changements depuis la v0.3
+
+- **Socle du niveau 1** : le terminal par défaut du système (Terminal.app, Windows Terminal,
+  terminal par défaut sous Linux) est toujours disponible, et toute commande s'exécute dans le
+  **shell interactif de l'utilisateur**, avec sa config (zsh + oh-my-zsh, alias, PATH, agent
+  SSH), comme dans Warp ou iTerm2 (F-108, F-109).
+- Warp évalué : pas d'API pour écrire dans un onglet existant, intégration limitée à
+  l'ouverture d'un onglet.
 
 ### Changements depuis la v0.2
 
@@ -226,6 +235,10 @@ change tant que la touche est enfoncée, pour que l'utilisateur sache ce que fer
 | F-105 | S | Retour : Ramure ne lit pas la sortie du terminal ; il confirme via le watcher (« Commande exécutée : feat/a déplacée ») comme au niveau 0 et propose l'annulation (envoyée ou copiée selon ⌥). |
 | F-106 | S | Indicateur permanent dans la barre d'outils : « ⌘ iTerm2 · sherpa (onglet 2) », clic = changer de cible, ⌥ clic = revenir au niveau 0 pour la session. |
 | F-107 | C | Dialecte de shell déduit de la cible (programme au premier plan) plutôt que du réglage. |
+| F-108 | M¹ | **Shell de l'utilisateur, config complète.** Quand Ramure ouvre un onglet ou lance une commande, il utilise le shell par défaut de l'utilisateur (`$SHELL`, ou le profil par défaut du terminal) en mode **interactif et login**, pour charger exactement la même config que dans Warp ou iTerm2 : `.zprofile`, `.zshrc`, oh-my-zsh et ses plugins, alias, `PATH` (nvm, asdf, Homebrew…), agent SSH, GPG. Jamais de `sh -c` nu. Une fois la commande terminée, le shell reste ouvert pour la suite : `zsh -l -i -c '<commande>; exec zsh -l -i'`. |
+| F-109 | M¹ | **Terminal de base toujours disponible** : le terminal par défaut du système, sans installation ni configuration. macOS : Terminal.app. Windows : Windows Terminal (repli sur PowerShell / `cmd`). Linux : terminal par défaut (`x-terminal-emulator`, `gnome-terminal`, `konsole`, `xdg-terminal-exec`). C'est la première intégration livrée. |
+
+¹ Obligatoire dès que le niveau 1 est livré (V1) : le niveau 1 ne sort pas sans ce socle.
 
 **Intégrations prévues** (chaque intégration déclare ce qu'elle sait faire : lister les cibles,
 connaître le dossier courant et le programme au premier plan, envoyer du texte, valider, ouvrir
@@ -233,6 +246,7 @@ un onglet) :
 
 | Terminal | OS | Mécanisme | Lister / cwd | Envoyer | Ouvrir un onglet | Prio |
 |----------|----|-----------|--------------|---------|------------------|------|
+| **Terminal par défaut du système (socle, F-109)** | tous | macOS : AppleScript Terminal.app (`do script` dans l'onglet du dépôt ou un nouvel onglet). Windows : `wt.exe -w 0 nt -d <dépôt> <shell>`. Linux : `gnome-terminal --working-directory=<dépôt> -- $SHELL -l -i -c '…'`, `konsole --workdir`, `x-terminal-emulator -e` | macOS : non ; autres : non | macOS : oui ; autres : nouvel onglet ou fenêtre | oui | **M¹** |
 | tmux | macOS, Linux | `tmux list-panes -a -F …`, `tmux send-keys -t <pane> -l '<cmd>'` puis `Enter` | oui (`pane_current_path`, `pane_current_command`) | oui | `tmux new-window -c <dépôt>` | S |
 | WezTerm | tous | `wezterm cli list --format json`, `wezterm cli send-text --pane-id` | oui | oui | `wezterm cli spawn --cwd` | S |
 | kitty | macOS, Linux | remote control (`kitty @ ls`, `kitty @ send-text`), à activer par l'utilisateur | oui | oui | `kitty @ launch --cwd` | S |
@@ -243,8 +257,10 @@ un onglet) :
 | Warp | macOS, Linux, Windows | Pas d'API d'envoi (ni AppleScript, ni CLI) ; Ramure écrit une *launch configuration* temporaire (`cwd` + `exec`) et l'ouvre via `warp://launch/<chemin>` ; `warp://action/new_tab?path=` pour un onglet vide | non | nouvel onglet uniquement | oui | C |
 | Autres (Ghostty, GNOME Terminal, terminal de VS Code…) | — | selon les API disponibles ; à défaut, niveau 0 | — | — | — | C |
 
-Pour les terminaux sans API d'envoi (Windows Terminal, Warp), le niveau 1 se limite à « ouvrir un
-onglet dans le dépôt et y lancer la commande », signalé comme tel dans le réglage.
+Pour les terminaux sans API d'envoi (Windows Terminal, terminaux Linux de base, Warp), le
+niveau 1 se limite à « ouvrir un onglet dans le dépôt et y lancer la commande », signalé comme
+tel dans le réglage. Dans tous les cas, la commande tourne dans le shell de l'utilisateur avec sa
+config complète (F-108) : l'environnement est le même que s'il avait ouvert l'onglet lui-même.
 
 ### 3.8 Opérations couvertes (toutes en commandes générées)
 
@@ -505,7 +521,7 @@ ramure/
 | **0 — Spike** | 1–2 sem. | `gix` + lanes + rendu canvas virtualisé sur 1 M commits ; prototype de la mise en page refs · graph · texte ; mesure `nucleo`. | Go/no-go perf + test utilisateur rapide (`ux-graph.md` §5) |
 | **1 — Viewer** | 3–4 sem. | F-01..04, F-10..17, F-26, F-30..32, F-36, palette, F-40..42, F-45, F-50, barre latérale, thèmes. Extraction en dépôt public. | Utilisable en viewer à côté du terminal |
 | **2 — Commandes** | 3–4 sem. | F-60..66, F-70..75, F-77, menus contextuels, drag & drop de base, F-94. | **Remplace GitKraken** pour la majorité des gestes |
-| **3 — V1** | 5 sem. | F-80..83 (`--onto`, piles), F-90..93 (rebase interactif), niveau 1 du terminal (F-101..106) avec tmux, WezTerm, kitty, iTerm2, Terminal.app, Windows Terminal, F-18..24, F-33..34, F-43..44, F-51, F-67..68, onglets, updater, EN. | **Résiliation GitKraken**, release publique 1.0 |
+| **3 — V1** | 5 sem. | F-80..83 (`--onto`, piles), F-90..93 (rebase interactif), niveau 1 du terminal (F-101..106, F-108..109) : terminal par défaut du système d'abord, puis tmux, WezTerm, kitty, iTerm2, F-18..24, F-33..34, F-43..44, F-51, F-67..68, onglets, updater, EN. | **Résiliation GitKraken**, release publique 1.0 |
 | **4 — Ensuite** | continu | F-25, F-35, F-46, F-107, worktrees, sous-modules, intégrations terminal supplémentaires (Konsole, Ghostty…). | — |
 
 ---
@@ -547,6 +563,7 @@ ramure/
 
 **V1**
 
+- [ ] Niveau 1 avec le terminal par défaut du système sur les 3 OS : la commande s'exécute dans le shell de l'utilisateur avec sa config (vérifié avec zsh + oh-my-zsh : un alias défini dans `.zshrc` est disponible dans l'onglet ouvert).
 - [ ] Niveau 1 avec tmux et iTerm2 : un clic exécute la commande dans la cible choisie, ⌥ clic la copie, et le libellé des boutons change pendant l'appui sur ⌥.
 - [ ] Une cible occupée (vim ouvert) n'est jamais écrite ; une commande non annulable est préremplie sans être validée.
 - [ ] Sur le scénario `develop` réécrite, Ramure propose `git rebase --onto develop feat/a~3 feat/a` et le résultat ne contient que les 3 commits de `feat/a`.
