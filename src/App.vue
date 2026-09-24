@@ -1,0 +1,487 @@
+<script setup lang="ts">
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from "vue";
+import { api, inTauri, type FileChange, type RepoSummary, type WorkStatus } from "./api";
+import { usesConventionalCommits } from "./lib/format";
+import GraphView from "./components/GraphView.vue";
+import Sidebar from "./components/Sidebar.vue";
+import DetailsPanel from "./components/DetailsPanel.vue";
+import DiffView from "./components/DiffView.vue";
+import Icon from "./components/Icon.vue";
+
+const summary = shallowRef<RepoSummary | null>(null);
+const revision = ref(0);
+const selected = ref<number | null>(null);
+const opening = ref(false);
+const error = ref<string | null>(null);
+const conventional = ref(false);
+const rainbow = ref(load("ramure.rainbow") === "1");
+const theme = ref<string>(load("ramure.theme") ?? "");
+const recents = ref<string[]>(JSON.parse(load("ramure.recents") ?? "[]"));
+
+const query = ref("");
+const hits = shallowRef<Set<number> | null>(null);
+const hitList = shallowRef<number[]>([]);
+const hitIndex = ref(-1);
+const searchInfo = ref<{ total: number; ms: number } | null>(null);
+const searchInput = ref<HTMLInputElement>();
+const graph = ref<InstanceType<typeof GraphView>>();
+const diffFile = ref<FileChange | null>(null);
+
+function load(k: string): string | null {
+  try {
+    return localStorage.getItem(k);
+  } catch {
+    return null;
+  }
+}
+function save(k: string, v: string) {
+  try {
+    localStorage.setItem(k, v);
+  } catch {
+    /* stockage indisponible : préférence non mémorisée */
+  }
+}
+function applyTheme() {
+  if (theme.value) document.documentElement.setAttribute("data-theme", theme.value);
+  else document.documentElement.removeAttribute("data-theme");
+}
+function cycleTheme() {
+  theme.value = theme.value === "" ? "light" : theme.value === "light" ? "dark" : "";
+  save("ramure.theme", theme.value);
+  applyTheme();
+}
+const themeLabel = computed(() => (theme.value === "light" ? "Clair" : theme.value === "dark" ? "Sombre" : "Système"));
+function toggleRainbow() {
+  rainbow.value = !rainbow.value;
+  save("ramure.rainbow", rainbow.value ? "1" : "0");
+}
+
+async function open(path: string) {
+  opening.value = true;
+  error.value = null;
+  try {
+    const s = await api.openRepo(path);
+    summary.value = s;
+    revision.value++;
+    selected.value = s.head.row ?? (s.rows ? 0 : null);
+    resetSearch();
+    recents.value = [s.path, ...recents.value.filter((p) => p !== s.path)].slice(0, 8);
+    save("ramure.recents", JSON.stringify(recents.value));
+    document.title = `${s.name} — Ramure`;
+    if (inTauri) import("@tauri-apps/api/window").then(({ getCurrentWindow }) => getCurrentWindow().setTitle(document.title)).catch(() => {});
+    const sample = await api.rows(0, Math.min(s.rows, 500));
+    conventional.value = usesConventionalCommits(sample.filter((r) => r.kind === "commit").map((r) => r.summary));
+    requestAnimationFrame(() => {
+      if (s.head.row != null) graph.value?.reveal(s.head.row, true);
+      graph.value?.focus();
+    });
+  } catch (e) {
+    error.value = String(e);
+  } finally {
+    opening.value = false;
+  }
+}
+
+async function pickFolder() {
+  if (!inTauri) return;
+  const { open: dialog } = await import("@tauri-apps/plugin-dialog");
+  const dir = await dialog({ directory: true, title: "Ouvrir un dépôt git" });
+  if (typeof dir === "string") open(dir);
+}
+
+// --- Recherche --------------------------------------------------------------
+let searchToken = 0;
+async function runSearch() {
+  const q = query.value;
+  const t = ++searchToken;
+  if (!q.trim() || !summary.value) {
+    resetSearch(false);
+    return;
+  }
+  const res = await api.search(q);
+  if (t !== searchToken) return;
+  hitList.value = res.rows;
+  hits.value = new Set(res.rows);
+  searchInfo.value = { total: res.total, ms: res.elapsed_ms };
+  const from = selected.value ?? 0;
+  hitIndex.value = res.rows.findIndex((r) => r >= from);
+  if (hitIndex.value < 0 && res.rows.length) hitIndex.value = 0;
+  if (hitIndex.value >= 0) goHit(hitIndex.value);
+}
+function resetSearch(clearQuery = true) {
+  if (clearQuery) query.value = "";
+  hits.value = null;
+  hitList.value = [];
+  hitIndex.value = -1;
+  searchInfo.value = null;
+}
+function goHit(i: number) {
+  if (!hitList.value.length) return;
+  hitIndex.value = (i + hitList.value.length) % hitList.value.length;
+  const row = hitList.value[hitIndex.value];
+  selected.value = row;
+  graph.value?.reveal(row, true);
+}
+function onSearchKey(e: KeyboardEvent) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    goHit(hitIndex.value + (e.shiftKey ? -1 : 1));
+  } else if (e.key === "Escape") {
+    resetSearch();
+    graph.value?.focus();
+  } else if (e.key === "ArrowDown") {
+    e.preventDefault();
+    graph.value?.focus();
+  }
+}
+
+async function gotoSha(sha: string) {
+  const row = await api.findRow(sha);
+  if (row != null) {
+    selected.value = row;
+    graph.value?.reveal(row, true);
+  }
+}
+function gotoRow(row: number) {
+  selected.value = row;
+  graph.value?.reveal(row, true);
+}
+
+const selectedIsWip = computed(() => summary.value != null && selected.value === 0 && summary.value.status && isDirty(summary.value.status));
+function isDirty(s: WorkStatus) {
+  return s.staged + s.unstaged + s.untracked + s.conflicted > 0;
+}
+
+function onGlobalKey(e: KeyboardEvent) {
+  const mod = e.metaKey || e.ctrlKey;
+  if (mod && e.key.toLowerCase() === "f") {
+    e.preventDefault();
+    searchInput.value?.focus();
+    searchInput.value?.select();
+  } else if (mod && e.key.toLowerCase() === "o") {
+    e.preventDefault();
+    pickFolder();
+  }
+}
+
+const unlisten: (() => void)[] = [];
+onMounted(async () => {
+  applyTheme();
+  window.addEventListener("keydown", onGlobalKey);
+  if (inTauri) {
+    const { listen } = await import("@tauri-apps/api/event");
+    const { getCurrentWebview } = await import("@tauri-apps/api/webview");
+    unlisten.push(
+      await listen<RepoSummary>("repo-changed", async (ev) => {
+        // Conserver la sélection sur le même commit après un rechargement.
+        const keepId = selected.value != null ? (await api.rows(selected.value, selected.value + 1).catch(() => []))[0]?.id : undefined;
+        summary.value = ev.payload;
+        revision.value++;
+        if (query.value) runSearch();
+        if (keepId) {
+          const row = await api.findRow(keepId);
+          selected.value = row ?? ev.payload.head.row;
+        }
+      }),
+      await listen<WorkStatus>("status-changed", (ev) => {
+        if (summary.value) summary.value = { ...summary.value, status: ev.payload };
+      }),
+      await getCurrentWebview().onDragDropEvent((ev) => {
+        if (ev.payload.type === "drop" && ev.payload.paths.length) open(ev.payload.paths[0]);
+      }),
+    );
+  }
+  const initial = await api.initialPath().catch(() => null);
+  if (initial) open(initial);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", onGlobalKey);
+  unlisten.forEach((u) => u());
+});
+
+const statusText = computed(() => {
+  const s = summary.value;
+  if (!s) return "";
+  const t = s.timings.total_ms;
+  return `${s.rows.toLocaleString("fr-FR")} commits · chargé en ${t < 1000 ? Math.round(t) + " ms" : (t / 1000).toFixed(1) + " s"}`;
+});
+</script>
+
+<template>
+  <div class="app">
+    <header class="tb">
+      <template v-if="summary">
+        <button class="crumb" title="Ouvrir un autre dépôt (⌘O)" @click="pickFolder">
+          <Icon name="folder" /><b>{{ summary.name }}</b>
+          <span class="br"><Icon name="branch" />{{ summary.head.branch ?? (summary.head.detached ? "HEAD détaché" : "—") }}</span>
+        </button>
+        <span class="sep"></span>
+        <span v-if="summary.identity.email" class="idchip" :title="`Identité git effective\n${summary.identity.name ?? ''} <${summary.identity.email}>\nDéfinie dans : ${summary.identity.origin ?? '?'}`">
+          <Icon name="user" />{{ summary.identity.email }}<span class="origin">{{ summary.identity.origin?.replace(/^.*\//, "") }}</span>
+        </span>
+        <span v-else class="idchip warn" title="Aucune identité git configurée pour ce dépôt"><Icon name="warn" />Pas d'identité git</span>
+        <span v-if="summary.status.operation" class="opchip"><Icon name="warn" />{{ summary.status.operation }} en cours</span>
+      </template>
+      <label class="search" :class="{ on: query }">
+        <Icon name="search" />
+        <input
+          id="search"
+          ref="searchInput"
+          v-model="query"
+          :disabled="!summary"
+          placeholder="Rechercher : message, sha, auteur, ref…"
+          spellcheck="false"
+          autocomplete="off"
+          @input="runSearch"
+          @keydown="onSearchKey"
+        />
+        <span v-if="searchInfo" class="count">
+          {{ searchInfo.total ? `${hitIndex + 1} / ${searchInfo.total.toLocaleString("fr-FR")}` : "aucun résultat" }} · {{ searchInfo.ms.toFixed(1) }} ms
+        </span>
+        <kbd v-else>⌘F</kbd>
+      </label>
+      <button class="tool" :title="rainbow ? 'Couleurs : arc-en-ciel' : 'Couleurs : focus (branche courante et troncs)'" @click="toggleRainbow">
+        <Icon name="palette" />{{ rainbow ? "Arc-en-ciel" : "Focus" }}
+      </button>
+      <button class="tool" title="Thème" @click="cycleTheme"><Icon name="sun" />{{ themeLabel }}</button>
+    </header>
+
+    <main v-if="summary" class="body">
+      <Sidebar :summary="summary" @goto="gotoRow" />
+      <div class="center">
+        <GraphView
+          ref="graph"
+          :summary="summary"
+          :selected="selected"
+          :hits="hits"
+          :query="query"
+          :conventional="conventional"
+          :rainbow="rainbow"
+          :revision="revision"
+          @select="(r) => ((selected = r), (diffFile = null))"
+          @open="() => {}"
+        />
+        <DiffView v-if="diffFile && selected != null" :row="selected" :file="diffFile" :wip="!!selectedIsWip" @close="diffFile = null" />
+      </div>
+      <DetailsPanel :row="selected" :revision="revision" @diff="(f) => (diffFile = f)" @goto="gotoSha" />
+    </main>
+
+    <main v-else class="welcome">
+      <div class="card">
+        <h1>Ramure</h1>
+        <p>Viewer git en lecture seule. Ouvrez un dépôt, ou glissez son dossier sur cette fenêtre.</p>
+        <button class="btn primary" :disabled="opening || !inTauri" @click="pickFolder"><Icon name="folder" />Ouvrir un dépôt… <kbd>⌘O</kbd></button>
+        <p v-if="!inTauri" class="muted">Mode navigateur : données d'exemple (<span class="mono">public/sample.json</span>).</p>
+        <p v-if="error" class="err">{{ error }}</p>
+        <div v-if="recents.length" class="recents">
+          <span class="eyebrow">Récents</span>
+          <button v-for="p in recents" :key="p" class="recent" @click="open(p)"><Icon name="folder" />{{ p }}</button>
+        </div>
+        <p v-if="opening" class="muted">Ouverture…</p>
+      </div>
+    </main>
+
+    <footer v-if="summary" class="status">
+      <span>{{ statusText }}</span>
+      <span v-if="summary.trunk_names.length">Troncs : {{ summary.trunk_names.join(", ") }}</span>
+      <span>Couleurs : {{ rainbow ? "arc-en-ciel" : "focus" }}</span>
+      <span class="r">Lecture seule · git {{ summary.git_version ?? "?" }} · gix</span>
+    </footer>
+  </div>
+</template>
+
+<style scoped>
+.app {
+  height: 100%;
+  display: grid;
+  grid-template-rows: 44px minmax(0, 1fr) auto;
+}
+.tb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  min-width: 0;
+}
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.crumb:hover {
+  background: var(--hover);
+}
+.crumb .br {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-2);
+}
+.sep {
+  width: 1px;
+  height: 20px;
+  background: var(--line);
+}
+.idchip,
+.opchip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  min-width: 0;
+}
+.idchip .origin {
+  color: var(--ink-3);
+  font: 10.5px var(--f-mono);
+}
+.idchip.warn,
+.opchip {
+  color: var(--warn);
+  background: var(--warn-bg);
+  border-color: color-mix(in srgb, var(--warn) 40%, transparent);
+}
+.search {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 8px;
+  width: min(460px, 40vw);
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink-3);
+}
+.search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.search input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  min-width: 0;
+}
+.count {
+  font: 11px var(--f-mono);
+  white-space: nowrap;
+}
+.tool {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  cursor: pointer;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.tool:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.body {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 320px;
+  min-height: 0;
+}
+.center {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.center > :first-child {
+  flex: 1;
+}
+.status {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 12px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink-3);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.status .r {
+  margin-left: auto;
+}
+.welcome {
+  display: grid;
+  place-items: center;
+}
+.card {
+  width: min(520px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: flex-start;
+}
+.card h1 {
+  margin: 0;
+  font-size: 34px;
+  letter-spacing: -0.01em;
+}
+.card p {
+  margin: 0;
+  color: var(--ink-2);
+}
+.muted {
+  color: var(--ink-3) !important;
+}
+.err {
+  color: var(--del) !important;
+  user-select: text;
+}
+.recents {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  margin-top: 8px;
+}
+.recent {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  border: 0;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--ink-2);
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+}
+.recent:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+</style>

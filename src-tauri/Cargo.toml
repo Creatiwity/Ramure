@@ -1,0 +1,23 @@
+[package]
+name = "ramure"
+description = "Viewer git de bureau centré sur un commit graph lisible"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "ramure_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build.workspace = true
+
+[dependencies]
+ramure-core = { path = "../crates/ramure-core" }
+tauri.workspace = true
+tauri-plugin-dialog.workspace = true
+notify.workspace = true
+serde.workspace = true
+serde_json.workspace = true

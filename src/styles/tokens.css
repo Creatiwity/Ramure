@@ -1,0 +1,268 @@
+/* Jetons de design de Ramure (planche design, planche K « Fondations »). */
+
+@font-face {
+  font-family: "Ramure UI";
+  src: local("Instrument Sans"), local("Inter"), local("SF Pro Text"), local("Segoe UI"), local("Ubuntu"), local("Cantarell");
+}
+
+:root {
+  color-scheme: light;
+  --bg: #fbfbfd;
+  --panel: #f2f3f7;
+  --raise: #ffffff;
+  --line: #e2e5ec;
+  --hover: #eaedf3;
+  --sel: #dce5fa;
+  --ink: #1b1f29;
+  --ink-2: #4f5667;
+  --ink-3: #7f8698;
+  --accent: #3558d8;
+  --accent-ink: #ffffff;
+  --add: #2b9457;
+  --del: #cf3f36;
+  --warn: #b7770f;
+  --warn-bg: #fbf1dc;
+  --mark: #ffe08a;
+  --mark-ink: #1b1f29;
+  --shadow: 0 1px 2px rgba(20, 28, 48, 0.06), 0 12px 32px -8px rgba(20, 28, 48, 0.18);
+  /* Lanes (couleurs vives ; les versions désaturées sont calculées). */
+  --l0: #3f7be0;
+  --l1: #8a5cd6;
+  --l2: #16998a;
+  --l3: #c4841a;
+  --l4: #d64a70;
+  --l5: #5a9a2b;
+  --l6: #d66529;
+  --l7: #2a98be;
+  --lx: #8a90a0;
+
+  --f-ui: "Instrument Sans", "Inter", system-ui, -apple-system, "Segoe UI", Ubuntu, Cantarell, sans-serif;
+  --f-mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, "DejaVu Sans Mono", monospace;
+  --row-h: 28px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #14171e;
+    --panel: #191d25;
+    --raise: #1f242e;
+    --line: #262b36;
+    --hover: #1e232d;
+    --sel: #22314f;
+    --ink: #dee2eb;
+    --ink-2: #a2a9ba;
+    --ink-3: #6c7386;
+    --accent: #7e9bff;
+    --accent-ink: #0d1020;
+    --add: #5ccb86;
+    --del: #ff7a70;
+    --warn: #f0b44d;
+    --warn-bg: #33291a;
+    --mark: #6b5314;
+    --mark-ink: #fff2cc;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 16px 40px -10px rgba(0, 0, 0, 0.6);
+    --l0: #6fa3ff;
+    --l1: #b598ff;
+    --l2: #43cdb8;
+    --l3: #f0b44d;
+    --l4: #ff7e9d;
+    --l5: #9fd166;
+    --l6: #ff9b5e;
+    --l7: #62d0f0;
+    --lx: #737b8e;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #14171e;
+  --panel: #191d25;
+  --raise: #1f242e;
+  --line: #262b36;
+  --hover: #1e232d;
+  --sel: #22314f;
+  --ink: #dee2eb;
+  --ink-2: #a2a9ba;
+  --ink-3: #6c7386;
+  --accent: #7e9bff;
+  --accent-ink: #0d1020;
+  --add: #5ccb86;
+  --del: #ff7a70;
+  --warn: #f0b44d;
+  --warn-bg: #33291a;
+  --mark: #6b5314;
+  --mark-ink: #fff2cc;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 16px 40px -10px rgba(0, 0, 0, 0.6);
+  --l0: #6fa3ff;
+  --l1: #b598ff;
+  --l2: #43cdb8;
+  --l3: #f0b44d;
+  --l4: #ff7e9d;
+  --l5: #9fd166;
+  --l6: #ff9b5e;
+  --l7: #62d0f0;
+  --lx: #737b8e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 12.5px/1.3 var(--f-ui);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+kbd {
+  font: 500 10.5px/1 var(--f-mono);
+  padding: 2px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.mono {
+  font-family: var(--f-mono);
+}
+
+.eyebrow {
+  font-size: 10.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--raise);
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--hover);
+}
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn.quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-2);
+}
+
+.btn.quiet:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 19px;
+  padding: 0 6px;
+  border-radius: 5px;
+  font: 500 11px/1 var(--f-ui);
+  white-space: nowrap;
+  flex: none;
+  max-width: 100%;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--c) 78%, var(--ink));
+  background: color-mix(in srgb, var(--c) 14%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+}
+
+.pill.head {
+  background: var(--c);
+  color: var(--bg);
+  border-color: var(--c);
+  font-weight: 600;
+}
+
+.pill.tag {
+  border-style: dashed;
+}
+
+.pill svg {
+  width: 11px;
+  height: 11px;
+  flex: none;
+}
+
+.pill span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+svg.i {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+mark {
+  background: var(--mark);
+  color: var(--mark-ink);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--ink-3) 35%, transparent);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

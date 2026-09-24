@@ -369,7 +369,8 @@ S : raccourcis, couleurs des lanes, mode couleur par défaut (focus / arc-en-cie
 | Recherche par frappe | < 16 ms | < 60 ms |
 | Défilement | 60 fps | 60 fps |
 | Mise à jour après une commande exécutée dans le terminal | < 150 ms | < 400 ms |
-| Mémoire | < 300 Mo | < 1,2 Go |
+| Mémoire du cœur (hors webview) | < 150 Mo | < 1,2 Go |
+| Mémoire de l'application complète | à mesurer sur poste réel (v0.1 : ~500 Mo sous Linux, dont ~255 Mo pour WebKit) | — |
 
 Benchmark automatisé en CI sur des dépôts de référence ; une régression > 20 % bloque la release.
 
@@ -482,7 +483,7 @@ trait TerminalBackend {
 
 ### 5.7 Front
 
-Vue 3 (Composition API) + TypeScript strict + Vite, Pinia, bindings générés par `tauri-specta`,
+Vue 3 (Composition API) + TypeScript strict + Vite, Pinia quand l'état partagé le justifiera (v0.1 : état local aux composants), bindings générés par `tauri-specta` dès sa sortie stable pour Tauri 2 (v0.1 : types TS écrits à la main dans `src/api.ts`),
 CodeMirror 6 pour les diffs, drag & drop maison sur Pointer Events, composants maison sur tokens
 CSS. Tests : Vitest, Playwright sur le build web avec backend mocké.
 
@@ -515,6 +516,26 @@ ramure/
 ---
 
 ## 7. Feuille de route
+
+### État d'avancement (24 septembre 2026)
+
+**v0.1 livrée : phase 0 et l'essentiel de la phase 1** (voir `README.md` et `PERF.md`).
+
+- Fait : F-01, F-04, F-10 à F-16, F-18, F-20, F-22, F-26, F-30 à F-32, F-36, F-40 à F-42,
+  F-45, F-50, barre latérale, thèmes. Ouverture de 100 k commits en ~0,55 s, recherche en 8 à
+  15 ms par frappe.
+- En partie : F-02 (récents, sans épinglage), F-17 (sélection simple seulement), F-19 (merges
+  raccourcis, sans mode first-parent), F-33 (`author:`, `msg:`, `ref:`, `sha:` ; pas encore
+  `before:`, `after:`, `merge:`).
+- Pas encore : palette ⌘K, F-03 (onglets), F-21, F-23, F-24, F-34, F-35, F-43, F-44, F-51,
+  i18n EN, benchmark 1 M commits, extraction en dépôt public.
+- Écarts assumés par rapport à la spec :
+  - diff affiché par un rendu maison (numéros de ligne, ajouts, suppressions) ; CodeMirror 6
+    et la coloration syntaxique restent à faire ;
+  - TypeScript 6.0.3 et non 7.0 : `vue-tsc` (3.3.11, dernière version) ne fonctionne pas encore
+    avec le compilateur natif de TypeScript 7 ;
+  - objectif mémoire séparé entre le cœur et la webview (§4.1).
+
 
 | Phase | Durée indicative | Contenu | Sortie |
 |-------|------------------|---------|--------|
