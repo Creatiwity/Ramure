@@ -132,6 +132,14 @@ jobs:
             echo "::error title=Secrets Apple manquants::${missing[*]} — voir docs/PACKAGING.md"
             exit 1
           fi
+          # Tauri compare APPLE_SIGNING_IDENTITY au nom exact du certificat : on retire espaces,
+          # retours à la ligne et guillemets collés par erreur, et l'on ignore une empreinte SHA-1
+          # (Tauri n'accepte que le nom ; sans valeur, il prend l'identité du certificat).
+          identity=$(printf '%s' "$APPLE_SIGNING_IDENTITY" | tr -d '\r\n' | sed -E 's/^[[:space:]"]+//; s/[[:space:]"]+$//')
+          if printf '%s' "$identity" | grep -Eq '^[0-9A-Fa-f]{40}$'; then
+            echo "::warning title=APPLE_SIGNING_IDENTITY ignoré::c'est une empreinte SHA-1 et non le nom de l'identité ; Tauri prendra celle du certificat."
+            identity=""
+          fi
           # Les variables ne sont exportées que si l'on signe : une variable vide ferait échouer
           # l'import du certificat par Tauri.
           {
@@ -139,7 +147,7 @@ jobs:
             echo "APPLE_CERTIFICATE_PASSWORD=$APPLE_CERTIFICATE_PASSWORD"
             echo "APPLE_API_ISSUER=$APPLE_API_ISSUER"
             echo "APPLE_API_KEY=$APPLE_API_KEY"
-            [ -n "$APPLE_SIGNING_IDENTITY" ] && echo "APPLE_SIGNING_IDENTITY=$APPLE_SIGNING_IDENTITY"
+            if [ -n "$identity" ]; then echo "APPLE_SIGNING_IDENTITY=$identity"; fi
           } >> "$GITHUB_ENV"
           key_path="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY}.p8"
           printf '%s\n' "$APPLE_API_KEY_P8" > "$key_path"

@@ -47,7 +47,7 @@ nécessaire pour la CI ni pour un build de test non signé.
 | `APPLE_API_ISSUER` | oui | *Issuer ID* de l'API App Store Connect (un UUID, affiché en haut de la page des clés). | `69a6de7e-…-…-…-…` |
 | `APPLE_API_KEY` | oui | *Key ID* de la clé API App Store Connect (10 caractères). | `2X9R4HXF34` |
 | `APPLE_API_KEY_P8` | oui | Le **contenu complet** du fichier `AuthKey_<KeyID>.p8`, lignes `-----BEGIN PRIVATE KEY-----` et `-----END PRIVATE KEY-----` comprises. | `-----BEGIN PRIVATE KEY-----`… |
-| `APPLE_SIGNING_IDENTITY` | non | Nom exact de l'identité de signature. Si absent, Tauri prend celle du certificat ; si présent, il vérifie qu'elle correspond. | `Developer ID Application: Creatiwity (ABCDE12345)` |
+| `APPLE_SIGNING_IDENTITY` | non (recommandé : ne pas le créer) | Nom exact de l'identité de signature, sans guillemets (pas l'empreinte hexadécimale, ignorée par le pipeline). Si absent, Tauri prend celle du certificat ; si présent, il vérifie qu'elle correspond. | `Developer ID Application: Creatiwity (ABCDE12345)` |
 
 `GITHUB_TOKEN` est fourni automatiquement par GitHub : rien à faire.
 
