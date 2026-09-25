@@ -116,6 +116,40 @@ export interface WipDetails {
 
 export type Details = CommitDetails | WipDetails;
 
+export interface RecentRepo {
+  path: string;
+  opened_at: number;
+}
+
+export interface WorkspaceRoot {
+  path: string;
+  added_at: number;
+  recent: RecentRepo[];
+}
+
+export interface WorkspaceStore {
+  version: number;
+  active: string | null;
+  roots: WorkspaceRoot[];
+  recent_outside: RecentRepo[];
+}
+
+export interface TreeNode {
+  name: string;
+  path: string;
+  kind: "dir" | "repo";
+  branch: string | null;
+  children: TreeNode[];
+}
+
+export interface ScanResult {
+  root: string;
+  tree: TreeNode[];
+  repos: number;
+  truncated: boolean;
+  elapsed_ms: number;
+}
+
 export const inTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 export interface Api {
@@ -128,6 +162,12 @@ export interface Api {
   findRow(sha: string): Promise<number | null>;
   commitDetails(row: number): Promise<Details>;
   fileDiff(row: number, path: string, oldPath: string | null, untracked: boolean): Promise<string>;
+  workspaces(): Promise<WorkspaceStore>;
+  workspaceAdd(path: string): Promise<WorkspaceStore>;
+  workspaceRemove(path: string): Promise<WorkspaceStore>;
+  workspaceActivate(path: string | null): Promise<WorkspaceStore>;
+  workspaceForget(repo: string): Promise<WorkspaceStore>;
+  workspaceScan(path: string): Promise<ScanResult>;
 }
 
 const tauriApi: Api = {
@@ -140,6 +180,12 @@ const tauriApi: Api = {
   findRow: (sha) => invoke("find_row", { sha }),
   commitDetails: (row) => invoke("commit_details", { row }),
   fileDiff: (row, path, oldPath, untracked) => invoke("file_diff", { row, path, oldPath, untracked }),
+  workspaces: () => invoke("workspaces"),
+  workspaceAdd: (path) => invoke("workspace_add", { path }),
+  workspaceRemove: (path) => invoke("workspace_remove", { path }),
+  workspaceActivate: (path) => invoke("workspace_activate", { path }),
+  workspaceForget: (repo) => invoke("workspace_forget", { repo }),
+  workspaceScan: (path) => invoke("workspace_scan", { path }),
 };
 
 interface Sample {
@@ -148,6 +194,96 @@ interface Sample {
   edges: Edge[];
   details: Record<string, Details>;
   diffs: Record<string, string>;
+}
+
+// --- Espaces de travail simulés (mode navigateur) -------------------------------------------
+// Mêmes règles que le store Rust (`workspace.rs`), conservées dans le localStorage.
+
+const WS_KEY = "ramure.demo.workspaces";
+const MAX_RECENT = 20;
+
+function readStore(): WorkspaceStore {
+  try {
+    const raw = localStorage.getItem(WS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    /* stockage indisponible */
+  }
+  return { version: 1, active: null, roots: [], recent_outside: [] };
+}
+function writeStore(s: WorkspaceStore): WorkspaceStore {
+  try {
+    localStorage.setItem(WS_KEY, JSON.stringify(s));
+  } catch {
+    /* stockage indisponible : le store vit le temps de la page */
+  }
+  return s;
+}
+const inside = (repo: string, root: string) => repo === root || repo.startsWith(root.endsWith("/") ? root : root + "/");
+function pushRecent(list: RecentRepo[], path: string, at: number): RecentRepo[] {
+  return [{ path, opened_at: at }, ...list.filter((r) => r.path !== path)].slice(0, MAX_RECENT);
+}
+export const demoStore = {
+  get: readStore,
+  add(path: string): WorkspaceStore {
+    const s = readStore();
+    const p = path.replace(/\/+$/, "") || "/";
+    if (!s.roots.some((r) => r.path === p)) {
+      const moved = s.recent_outside.filter((r) => inside(r.path, p));
+      s.recent_outside = s.recent_outside.filter((r) => !inside(r.path, p));
+      s.roots.push({ path: p, added_at: Math.floor(Date.now() / 1000), recent: moved });
+    }
+    s.active = p;
+    return writeStore(s);
+  },
+  remove(path: string): WorkspaceStore {
+    const s = readStore();
+    s.roots = s.roots.filter((r) => r.path !== path);
+    if (s.active === path) s.active = s.roots[0]?.path ?? null;
+    return writeStore(s);
+  },
+  activate(path: string | null): WorkspaceStore {
+    const s = readStore();
+    s.active = path && s.roots.some((r) => r.path === path) ? path : null;
+    return writeStore(s);
+  },
+  forget(repo: string): WorkspaceStore {
+    const s = readStore();
+    s.roots.forEach((r) => (r.recent = r.recent.filter((x) => x.path !== repo)));
+    s.recent_outside = s.recent_outside.filter((x) => x.path !== repo);
+    return writeStore(s);
+  },
+  recordOpen(repo: string, at = Math.floor(Date.now() / 1000)): WorkspaceStore {
+    const s = readStore();
+    let found = false;
+    for (const r of s.roots) {
+      if (inside(repo, r.path)) {
+        r.recent = pushRecent(r.recent, repo, at);
+        found = true;
+      }
+    }
+    if (!found) s.recent_outside = pushRecent(s.recent_outside, repo, at);
+    return writeStore(s);
+  },
+};
+
+/** Arbre de démonstration : le dépôt d'exemple et quelques voisins fictifs. */
+function demoTree(root: string, sample: string): ScanResult {
+  const repo = (name: string, path: string, branch: string | null): TreeNode => ({ name, path, kind: "repo", branch, children: [] });
+  const dir = (name: string, path: string, children: TreeNode[]): TreeNode => ({ name, path, kind: "dir", branch: null, children });
+  const r = root.replace(/\/+$/, "");
+  return {
+    root: r,
+    repos: 6,
+    truncated: false,
+    elapsed_ms: 3.2,
+    tree: [
+      dir("clients / acme / apps", `${r}/clients/acme/apps`, [repo("api", `${r}/clients/acme/apps/api`, "main"), repo("site", `${r}/clients/acme/apps/site`, "develop")]),
+      dir("creatiwity", `${r}/creatiwity`, [repo("incubator", `${r}/creatiwity/incubator`, "main"), repo("mesalia-home", `${r}/creatiwity/mesalia-home`, "feat/ota")]),
+      repo(sample.split("/").pop() ?? "sample-repo", sample, "feature/scoring"),
+      repo("dotfiles", `${r}/dotfiles`, "main"),
+    ],
+  };
 }
 
 /** Backend de démonstration : mêmes réponses que le cœur Rust, calculées sur un export. */
@@ -161,7 +297,12 @@ export function sampleApi(load: () => Promise<Sample>): Api {
   };
   return {
     initialPath: async () => (await get()).summary.path,
-    openRepo: async () => (await get()).summary,
+    openRepo: async (path) => {
+      const d = await get();
+      if (path !== d.summary.path) throw new Error("Mode navigateur : seul le dépôt d'exemple peut être ouvert.");
+      demoStore.recordOpen(path);
+      return d.summary;
+    },
     rows: async (s, e) => (await get()).rows.slice(s, e),
     edges: async (s, e) => (await get()).edges.filter((x) => x.from_row < e && x.to_row >= s),
     search: async (q) => {
@@ -180,6 +321,12 @@ export function sampleApi(load: () => Promise<Sample>): Api {
       return d;
     },
     fileDiff: async (row, path) => (await get()).diffs[`${row}:${path}`] ?? "",
+    workspaces: async () => demoStore.get(),
+    workspaceAdd: async (p) => demoStore.add(p),
+    workspaceRemove: async (p) => demoStore.remove(p),
+    workspaceActivate: async (p) => demoStore.activate(p),
+    workspaceForget: async (p) => demoStore.forget(p),
+    workspaceScan: async (p) => demoTree(p, (await get()).summary.path),
   };
 }
 

@@ -1,7 +1,14 @@
 # Ramure : cahier des charges
 
-> Version 0.4 · Statut : **spécification** (draft à challenger)
+> Version 0.5 · Statut : **spécification** (draft à challenger)
 > Planche design : [`design-board.html`](./design-board.html) · Lisibilité du graph : [`ux-graph.md`](./ux-graph.md)
+
+### Changements depuis la v0.4
+
+- **Espaces de travail** (F-08) : des dossiers racines servent de contextes ; un panneau
+  latéral repliable liste les dépôts trouvés dedans (dossiers intermédiaires fusionnés, comme
+  VS Code) et les derniers dépôts ouverts de chaque contexte, avec leur date et un raccourci
+  ⌘1…⌘9. Ces dépôts alimentent aussi la palette ⌘K.
 
 ### Changements depuis la v0.3
 
@@ -128,6 +135,7 @@ Identifiants stables `F-xx` à référencer dans les issues et PR.
 | F-01 | M | Ouvrir un dépôt local (dialogue, glisser un dossier sur la fenêtre, `ramure <chemin>`). |
 | F-02 | M | Dépôts récents, épinglables. |
 | F-03 | S | Onglets : plusieurs dépôts dans une fenêtre. |
+| F-08 | S | **Espaces de travail.** Un ou plusieurs dossiers racines (ex. `~/code`, `~/clients`) servent de contextes, sauvegardés automatiquement, chacun supprimable (les dépôts ne sont jamais touchés). Panneau latéral repliable (⌘⇧E) : choix du dossier racine actif ; **dépôts récents du contexte** avec la date d'ouverture et un raccourci ⌘1…⌘9 ; **arbre des dépôts** trouvés sous la racine, élagué (seuls les chemins qui mènent à un dépôt), avec les dossiers qui ne contiennent qu'un sous-dossier fusionnés en une ligne (`clients / acme / apps`, comme les « compact folders » de VS Code), branche courante de chaque dépôt, filtre flou. Le scan ne descend pas dans un dépôt ni dans les dossiers lourds (`node_modules`, `target`…) et s'arrête à 6 niveaux et 2 000 dépôts. Un dépôt ouvert hors de toute racine est gardé dans « hors espace » et rejoint le contexte si on ajoute sa racine plus tard. |
 | F-04 | M | Rafraîchissement automatique (watcher sur `.git/` et l'arbre de travail, debounce). Aucun bouton « Refresh ». |
 | F-06 | C | Worktrees : lister, ouvrir dans un onglet. |
 | F-07 | C | Sous-modules : état. |
@@ -171,9 +179,10 @@ repliables, avec filtre texte. Clic = aller au commit.
 | F-35 | C | `diff:computeUrgency` (équivalent `git log -S/-G`), en tâche de fond, annulable. |
 | F-36 | M | Compteur de résultats et durée (« 4 résultats · 2 ms »). |
 
-**Palette de commandes** (M, ⌘/Ctrl+K) : même moteur, portée élargie aux branches, tags,
-fichiers et **actions** (« Rebase interactif… », « Fetch all »…). Chaque action aboutit à une
-commande générée (§3.6–3.7).
+**Palette de commandes** (M, ⌘/Ctrl+K) : dépôts récents de tous les contextes (le contexte actif
+d'abord, avec son raccourci), dépôts du contexte actif, autres contextes, branches, tags,
+fichiers et **actions** (« Rebase interactif… », « Fetch all »…). Chaque action d'écriture
+aboutit à une commande générée (§3.6–3.7).
 
 ### 3.4 Détails de commit et diff (lecture)
 
@@ -348,7 +357,8 @@ push / pull · renommer · supprimer · copier le nom.
 | ⌘C (fiche ouverte) | Copier, quel que soit le niveau |
 | ⌘Z | Annulation de la dernière commande exécutée (copiée ou envoyée selon le niveau) |
 | ⌘B | Branche au commit sélectionné |
-| ⌘1..9 | Onglet de dépôt n |
+| ⌘1..9 | Ouvrir le n-ième dépôt récent du contexte actif (F-08) |
+| ⌘⇧E | Afficher / masquer le panneau des espaces |
 
 ### 3.13 Préférences
 
@@ -517,17 +527,19 @@ ramure/
 
 ## 7. Feuille de route
 
-### État d'avancement (24 septembre 2026)
+### État d'avancement (25 septembre 2026)
 
-**v0.1 livrée : phase 0 et l'essentiel de la phase 1** (voir `README.md` et `PERF.md`).
+**v0.2 livrée : phase 0 et l'essentiel de la phase 1** (voir `README.md` et `PERF.md`).
+La v0.2 ajoute les espaces de travail (F-08) et une première palette ⌘K.
 
-- Fait : F-01, F-04, F-10 à F-16, F-18, F-20, F-22, F-26, F-30 à F-32, F-36, F-40 à F-42,
+- Fait : F-01, F-04, F-08, F-10 à F-16, F-18, F-20, F-22, F-26, F-30 à F-32, F-36, F-40 à F-42,
   F-45, F-50, barre latérale, thèmes. Ouverture de 100 k commits en ~0,55 s, recherche en 8 à
   15 ms par frappe.
-- En partie : F-02 (récents, sans épinglage), F-17 (sélection simple seulement), F-19 (merges
+- En partie : palette ⌘K (dépôts, contextes, branches et tags, actions de lecture ; pas encore
+  les fichiers), F-02 (récents par contexte, sans épinglage), F-17 (sélection simple seulement), F-19 (merges
   raccourcis, sans mode first-parent), F-33 (`author:`, `msg:`, `ref:`, `sha:` ; pas encore
   `before:`, `after:`, `merge:`).
-- Pas encore : palette ⌘K, F-03 (onglets), F-21, F-23, F-24, F-34, F-35, F-43, F-44, F-51,
+- Pas encore : F-03 (onglets), F-21, F-23, F-24, F-34, F-35, F-43, F-44, F-51,
   i18n EN, benchmark 1 M commits, extraction en dépôt public.
 - Écarts assumés par rapport à la spec :
   - diff affiché par un rendu maison (numéros de ligne, ajouts, suppressions) ; CodeMirror 6

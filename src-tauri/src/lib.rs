@@ -11,6 +11,7 @@ use ramure_core::Repo;
 use ramure_core::gitcli;
 use ramure_core::search::SearchResult;
 use ramure_core::view::{self, Details, EdgeDto, RepoSummary, Row};
+use ramure_core::workspace::{self, ScanOptions, ScanResult, Store};
 use tauri::{AppHandle, Emitter, Manager, State};
 
 #[derive(Default)]
@@ -19,6 +20,56 @@ struct AppState {
     watcher: Mutex<Option<notify::RecommendedWatcher>>,
     /// Incrémenté à chaque ouverture : un rechargement lancé pour un dépôt précédent est ignoré.
     generation: Mutex<u64>,
+    /// Espaces de travail (dossiers racines et récents), persistés dans le dossier de config.
+    workspaces: Mutex<Option<(PathBuf, Store)>>,
+}
+
+/// Applique une modification au store des espaces, l'enregistre et le renvoie.
+fn with_store(app: &AppHandle, state: &State<AppState>, f: impl FnOnce(&mut Store)) -> Result<Store, String> {
+    let mut guard = state.workspaces.lock().unwrap();
+    if guard.is_none() {
+        let file = app.path().app_config_dir().map_err(|e| e.to_string())?.join("workspaces.json");
+        let store = Store::load(&file);
+        *guard = Some((file, store));
+    }
+    let (file, store) = guard.as_mut().unwrap();
+    f(store);
+    store.save(file).map_err(|e| e.to_string())?;
+    Ok(store.clone())
+}
+
+#[tauri::command]
+fn workspaces(app: AppHandle, state: State<'_, AppState>) -> Result<Store, String> {
+    with_store(&app, &state, |_| {})
+}
+
+#[tauri::command]
+fn workspace_add(app: AppHandle, state: State<'_, AppState>, path: String) -> Result<Store, String> {
+    with_store(&app, &state, |s| {
+        s.add_root(&path);
+    })
+}
+
+#[tauri::command]
+fn workspace_remove(app: AppHandle, state: State<'_, AppState>, path: String) -> Result<Store, String> {
+    with_store(&app, &state, |s| s.remove_root(&path))
+}
+
+#[tauri::command]
+fn workspace_activate(app: AppHandle, state: State<'_, AppState>, path: Option<String>) -> Result<Store, String> {
+    with_store(&app, &state, |s| s.set_active(path.as_deref()))
+}
+
+#[tauri::command]
+fn workspace_forget(app: AppHandle, state: State<'_, AppState>, repo: String) -> Result<Store, String> {
+    with_store(&app, &state, |s| s.forget(&repo))
+}
+
+#[tauri::command]
+async fn workspace_scan(path: String) -> Result<ScanResult, String> {
+    tauri::async_runtime::spawn_blocking(move || workspace::scan(Path::new(&path), ScanOptions::default()).map_err(|e| e.to_string()))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 fn current(state: &State<AppState>) -> Result<Arc<Repo>, String> {
@@ -27,6 +78,9 @@ fn current(state: &State<AppState>) -> Result<Arc<Repo>, String> {
 
 #[tauri::command]
 async fn open_repo(app: AppHandle, state: State<'_, AppState>, path: String) -> Result<RepoSummary, String> {
+    if !Path::new(&path).exists() {
+        return Err(format!("Dossier introuvable : {path}."));
+    }
     let repo = tauri::async_runtime::spawn_blocking(move || Repo::open(&path))
         .await
         .map_err(|e| e.to_string())?
@@ -40,7 +94,8 @@ async fn open_repo(app: AppHandle, state: State<'_, AppState>, path: String) -> 
     };
     let (workdir, git_dir) = (repo.workdir.clone(), repo.git_dir.clone());
     *state.repo.lock().unwrap() = Some(repo);
-    *state.watcher.lock().unwrap() = watch(app, workdir, git_dir, generation).ok();
+    *state.watcher.lock().unwrap() = watch(app.clone(), workdir, git_dir, generation).ok();
+    let _ = with_store(&app, &state, |st| st.record_open(&s.path));
     Ok(s)
 }
 
@@ -181,6 +236,12 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
+            workspaces,
+            workspace_add,
+            workspace_remove,
+            workspace_activate,
+            workspace_forget,
+            workspace_scan,
             open_repo,
             rows,
             edges,

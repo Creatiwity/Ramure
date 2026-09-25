@@ -1,6 +1,6 @@
 # ramure *(nom de code)*
 
-> Statut : **incubation** — v0.1 (viewer) · spec v0.4 · open source (MIT OR Apache-2.0)
+> Statut : **incubation** — v0.2 (viewer) · spec v0.5 · open source (MIT OR Apache-2.0)
 
 ## Résumé
 
@@ -19,11 +19,21 @@ par la config git (`includeIf`).
 
 Ce projet a vocation à être extrait dans son propre dépôt public (`Creatiwity/ramure`).
 
-![Ramure v0.1 : graph du dépôt d'exemple](docs/v0.1-graph.png)
+![Ramure v0.2 : panneau des espaces et graph](docs/v0.2-workspaces.png)
 
-## Ce que fait la v0.1
+## Ce que fait la v0.2
 
 Phase 0 (prototype de performance) et phase 1 (viewer) de la feuille de route :
+
+- **Espaces de travail** (nouveau en v0.2) : panneau latéral repliable (⌘/Ctrl+⇧E). On choisit
+  un ou plusieurs dossiers racines (par exemple `~/code`) ; pour le dossier actif, Ramure
+  affiche les **derniers dépôts ouverts** avec leur date et un raccourci ⌘/Ctrl+1…9, et
+  l'**arbre des dépôts** trouvés dedans, où les dossiers qui ne contiennent qu'un sous-dossier
+  sont fusionnés en une ligne (`clients / acme / apps`, comme VS Code). Tout est sauvegardé
+  automatiquement dans le dossier de configuration de Ramure ; chaque dossier racine peut être
+  retiré (les dépôts ne sont pas touchés).
+- **Palette de commandes** (⌘/Ctrl+K, nouveau en v0.2) : dépôts récents de tous les contextes,
+  dépôts du contexte actif, changement de contexte, branches et tags du dépôt ouvert, actions.
 
 - **Graph** : trois zones refs · graph · messages alignés, pastilles reliées à leur nœud,
   largeur de graph constante, lanes « straight branches » avec `main` puis `develop` épinglés à
@@ -43,8 +53,13 @@ Phase 0 (prototype de performance) et phase 1 (viewer) de la feuille de route :
 - Thèmes clair et sombre (suit le système), clavier : ↑/↓ ou j/k, PageUp/PageDown, Home/End,
   `h` pour aller à HEAD.
 
+Quand la vue du graph est étroite (panneau ouvert sur un petit écran), la colonne auteur passe
+dans l'infobulle de la date et les pastilles se resserrent.
+
 Pas encore : commandes générées, menus contextuels, drag & drop, rebase interactif, intégration
 terminal (phases 2 et 3, voir la spec §7).
+
+![Palette de commandes](docs/v0.2-palette.png)
 
 ## Démarrage
 
@@ -97,7 +112,8 @@ Performances : voir [`PERF.md`](./PERF.md) (dépôt synthétique de 100 000 comm
 - `PERF.md` : mesures de performance de la v0.1.
 - `crates/ramure-core/` : cœur Rust sans dépendance à Tauri. `repo.rs` (chargement via gix),
   `graph.rs` (tri date-order, lanes, arêtes), `search.rs` (nucleo), `gitcli.rs` (git en lecture
-  seule : statut, stashes, détails, diffs, identité), `view.rs` (objets envoyés au front).
+  seule : statut, stashes, détails, diffs, identité), `view.rs` (objets envoyés au front),
+  `workspace.rs` (scan des dépôts sous un dossier racine, store des espaces et des récents).
   Exemples : `bench` (mesures), `dump` (export pour le mode navigateur).
 - `src-tauri/` : application Tauri (commandes IPC, watcher du dépôt).
 - `src/` : front Vue 3 + TypeScript (`GraphView.vue` pour le graph, `api.ts` pour l'accès au

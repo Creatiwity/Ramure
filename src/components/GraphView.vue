@@ -23,8 +23,9 @@ const emit = defineEmits<{ select: [row: number]; open: [row: number] }>();
 const RH = 28;
 const OVERSCAN = 12;
 const CHUNK = 256;
-const REFS_W = 180;
 const AUTHOR_W = 128;
+/** En dessous de cette largeur, la colonne auteur passe dans l'infobulle et les refs se resserrent. */
+const NARROW = 820;
 const DATE_W = 78;
 const MAX_VISIBLE_LANES = 12;
 const X0 = 12;
@@ -54,7 +55,9 @@ const visible = computed(() => {
   for (let r = first.value; r < last.value; r++) out.push(r);
   return out;
 });
-const columns = computed(() => `${REFS_W}px ${graphW.value}px minmax(0, 1fr) ${AUTHOR_W}px ${DATE_W}px 12px`);
+const narrow = computed(() => width.value < NARROW);
+const refsW = computed(() => (narrow.value ? 140 : 180));
+const columns = computed(() => `${refsW.value}px ${graphW.value}px minmax(0, 1fr) ${narrow.value ? 0 : AUTHOR_W}px ${DATE_W}px 12px`);
 const focusChains = computed(() => {
   const s = new Set<number>(props.summary.trunk_chains);
   if (props.summary.head_chain != null) s.add(props.summary.head_chain);
@@ -463,11 +466,11 @@ async function selectRow(row: number) {
 <template>
   <div class="graph" :style="{ '--cols': columns }">
     <div class="ghead">
-      <span>Refs</span><span></span><span>Message</span><span>Auteur</span><span>Date</span><span></span>
+      <span>Refs</span><span></span><span>Message</span><span>{{ narrow ? "" : "Auteur" }}</span><span>Date</span><span></span>
     </div>
     <div ref="viewport" class="viewport" tabindex="0" @scroll.passive="onScroll" @keydown="onKey" @mouseleave="hovered = null">
       <div class="spacer" :style="{ height: total * RH + 'px' }">
-        <canvas ref="canvas" class="lanes" :style="{ left: REFS_W + 'px' }" />
+        <canvas ref="canvas" class="lanes" :style="{ left: refsW + 'px' }" />
         <template v-for="v in viewRows" :key="v.r">
           <div
             v-if="v.row"
@@ -483,12 +486,12 @@ async function selectRow(row: number) {
                 <span v-if="v.more" class="more">+{{ v.more }}</span>
                 <span class="pill" :class="{ head: v.top.head, tag: v.top.kind === 'tag' }" :style="{ '--c': v.color }">
                   <Icon v-for="ic in v.icons" :key="ic" :name="ic as any" />
-                  <span>{{ middleEllipsis(v.top.name, 22) }}</span>
+                  <span>{{ middleEllipsis(v.top.name, narrow ? 16 : 22) }}</span>
                 </span>
               </template>
             </span>
             <span></span>
-            <span class="msg">
+            <span class="msg" :title="v.row.kind === 'wip' ? '' : v.row.summary">
               <template v-if="v.row.kind === 'wip'">
                 <span v-if="conventional" class="ctype"><Icon name="pencil" /></span>
                 <Icon v-else name="pencil" />
@@ -505,8 +508,8 @@ async function selectRow(row: number) {
                 >
               </template>
             </span>
-            <span class="who" :class="{ rep: v.repeated }">{{ v.row.author }}</span>
-            <span class="when" :title="v.row.time ? fullDate(v.row.time) : ''">{{ v.date }}</span>
+            <span class="who" :class="{ rep: v.repeated, gone: narrow }">{{ narrow ? "" : v.row.author }}</span>
+            <span class="when" :title="v.row.time ? (narrow ? `${v.row.author} · ` : '') + fullDate(v.row.time) : ''">{{ v.date }}</span>
             <span></span>
           </div>
           <div v-else class="row placeholder" :style="{ top: v.r * RH + 'px' }"><span></span><span></span><span class="msg"><i></i></span></div>
@@ -592,6 +595,13 @@ async function selectRow(row: number) {
   align-items: center;
   gap: 4px;
   padding: 0 0 0 8px;
+}
+.row > span.gone {
+  padding: 0;
+}
+.refs .pill {
+  flex: 0 1 auto;
+  min-width: 0;
 }
 .more {
   font: 600 10.5px var(--f-mono);

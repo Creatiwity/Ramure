@@ -102,3 +102,26 @@ export function initials(name: string): string {
   const parts = name.replace(/[^\p{L}\s.-]/gu, "").split(/[\s.-]+/).filter(Boolean);
   return ((parts[0]?.[0] ?? "?") + (parts[1]?.[0] ?? "")).toUpperCase();
 }
+
+/** « à l'instant », « il y a 5 min », « il y a 2 h », « hier », « il y a 3 j », puis la date. */
+export function ago(time: number, now = Date.now() / 1000): string {
+  const d = Math.max(0, now - time);
+  if (d < 60) return "à l'instant";
+  if (d < 3600) return `il y a ${Math.floor(d / 60)} min`;
+  if (d < 86400) return `il y a ${Math.floor(d / 3600)} h`;
+  if (d < 2 * 86400) return "hier";
+  if (d < 30 * 86400) return `il y a ${Math.floor(d / 86400)} j`;
+  return relativeDate(time, now);
+}
+
+/** Dernier segment d'un chemin. */
+export function basename(path: string): string {
+  return path.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || path;
+}
+
+/** Chemin relatif à une racine (« clients/acme/api »), ou le chemin avec ~ pour le dossier personnel. */
+export function relativeTo(path: string, root: string | null, home?: string): string {
+  if (root && (path === root || path.startsWith(root.replace(/[\\/]+$/, "") + "/"))) return path.slice(root.replace(/[\\/]+$/, "").length + 1) || basename(path);
+  if (home && path.startsWith(home + "/")) return "~" + path.slice(home.length);
+  return path;
+}

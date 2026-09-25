@@ -22,6 +22,12 @@ export const PATHS = {
   palette: '<path d="M8 1.5a6.5 6.5 0 1 0 0 13c1 0 1.5-.7 1.5-1.4 0-.9-.8-1.2-.8-2 0-.7.6-1.1 1.3-1.1H12a2.5 2.5 0 0 0 2.5-2.5A6 6 0 0 0 8 1.5z"/><circle cx="5" cy="7" r=".8"/><circle cx="8" cy="4.6" r=".8"/><circle cx="11" cy="6.5" r=".8"/>',
   user: '<circle cx="8" cy="5.5" r="2.5"/><path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5"/>',
   file: '<path d="M4 1.5h5l3.5 3.5v9.5H4z"/><path d="M9 1.5V5h3.5"/>',
+  panel: '<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M6 2.5v11"/>',
+  plus: '<path d="M8 3v10M3 8h10"/>',
+  refresh: '<path d="M13 8a5 5 0 1 1-1.5-3.5"/><path d="M13 2.5v3h-3"/>',
+  trash: '<path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 9h5.6l.7-9"/>',
+  repo: '<path d="M3.5 13V3a1 1 0 0 1 1-1h8v10h-8a1 1 0 0 0-1 1 1 1 0 0 0 1 1h8"/><path d="M6 2v5l1.25-1 1.25 1V2"/>',
+  cmd: '<path d="M5.5 5.5h5v5h-5z"/><path d="M5.5 5.5H4a1.5 1.5 0 1 1 1.5-1.5zM10.5 5.5V4a1.5 1.5 0 1 1 1.5 1.5zM10.5 10.5H12a1.5 1.5 0 1 1-1.5 1.5zM5.5 10.5V12A1.5 1.5 0 1 1 4 10.5z"/>',
 } as const;
 </script>
 

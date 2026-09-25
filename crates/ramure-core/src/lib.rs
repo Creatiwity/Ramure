@@ -8,6 +8,7 @@ pub mod graph;
 pub mod repo;
 pub mod search;
 pub mod view;
+pub mod workspace;
 
 pub use repo::{CommitInfo, CommitKind, RefInfo, RefKind, Repo};
 
