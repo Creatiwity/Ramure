@@ -382,6 +382,48 @@ body.alt .althint .on{display:inline}
 .statecard .lab{font:600 10.5px var(--f-ui);letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
 .toast>span:not(.undo){flex:1 1 200px;min-width:0}
 .toast.warn{background:var(--warn-bg);color:var(--ink);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent)}
+
+/* workspaces plate */
+.wsp{width:260px;flex:none;background:var(--app-panel);border:1px solid var(--app-line);border-radius:10px;box-shadow:var(--shadow);font:12.5px/1.3 var(--f-ui);color:var(--ink);display:flex;flex-direction:column;overflow:hidden;position:relative;min-height:470px}
+.wsp .hd{display:flex;align-items:center;justify-content:space-between;padding:9px 9px 5px 12px}
+.wsp .ic{color:var(--ink-3);display:inline-flex;padding:3px;border-radius:5px}
+.wsp .rootbtn{margin:0 8px 6px;display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:7px;border:1px solid var(--app-line);background:var(--app-bg);font-weight:600}
+.wsp .rootbtn .sp{flex:1}
+.wsp .sh{display:flex;align-items:center;gap:6px;padding:7px 8px 3px 12px}
+.wsp .sh .n{margin-left:auto;font:10.5px var(--f-mono);color:var(--ink-3)}
+.wsp .rc{display:flex;align-items:center;gap:8px;padding:5px 10px 5px 12px}
+.wsp .rc.cur{background:var(--app-sel)}
+.wsp .rc .two{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+.wsp .rc b{font-weight:600}
+.wsp .rc small{font-size:11px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wsp .rc kbd{font-size:10px;padding:1px 4px}
+.wsp .flt{margin:2px 8px 6px;height:26px;border-radius:6px;border:1px solid var(--app-line);background:var(--app-bg);display:flex;align-items:center;gap:6px;padding:0 8px;color:var(--ink-3)}
+.wsp .flt.on{border-color:var(--accent);color:var(--ink)}
+.wsp .nd{display:flex;align-items:center;gap:6px;padding:4px 10px;color:var(--ink-2);white-space:nowrap}
+.wsp .nd.repo{color:var(--ink)}
+.wsp .nd.cur{background:var(--app-sel);font-weight:600}
+.wsp .nd .tw{width:11px;height:11px;color:var(--ink-3)}
+.wsp .nd .tw.open{transform:rotate(90deg)}
+.wsp .nd .sp{width:11px;flex:none}
+.wsp .nd .br{margin-left:auto;font:10.5px var(--f-mono);color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;max-width:45%}
+.wsp .nd mark{background:var(--mark);color:var(--mark-ink);border-radius:2px}
+.wsp .note{padding:6px 12px;color:var(--ink-3);font-style:italic}
+.wsp .menu2{position:absolute;left:8px;right:8px;top:74px;z-index:3;background:var(--app-raise);border:1px solid var(--app-line);border-radius:9px;box-shadow:var(--shadow);padding:4px}
+.wsp .mrow{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px}
+.wsp .mrow.cur{background:var(--app-sel)}
+.wsp .mrow .two{display:flex;flex-direction:column;flex:1;min-width:0}
+.wsp .mrow small{font-size:11px;color:var(--ink-3)}
+.wsp .mrow .del{color:var(--ink-3)}
+.wsp .mrow .conf{background:var(--danger);color:#fff;border-radius:5px;padding:2px 8px;font-size:11.5px}
+.wsp .msep{height:1px;background:var(--app-line);margin:4px 6px}
+.wsp .empty2{padding:8px 12px;display:flex;flex-direction:column;gap:10px;color:var(--ink-2);line-height:1.45}
+.wsp .dim{opacity:.35}
+.wscap{font-size:12px;color:var(--ink-3);text-align:center}
+.wsgrid{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+.wsgrid figure{margin:0;display:flex;flex-direction:column;gap:8px;align-items:center}
+.rail{display:flex;align-items:center;gap:8px;padding:0 10px;height:44px;background:var(--app-panel);border:1px solid var(--app-line);border-radius:10px;font:12.5px var(--f-ui);color:var(--ink);box-shadow:var(--shadow)}
+.rail .tg{display:inline-flex;padding:5px;border-radius:6px;color:var(--ink-2)}
+.rail .tg.on{color:var(--accent);background:var(--app-hover)}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -416,6 +458,10 @@ body.alt .althint .on{display:inline}
     <symbol id="i-term" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M4.5 6l2 2-2 2M8.5 10.5h3"/></symbol>
     <symbol id="i-clip" viewBox="0 0 16 16"><rect x="3.5" y="3" width="9" height="11" rx="1"/><path d="M6 3V2h4v1"/><path d="M6 7.5h4M6 10h3"/></symbol>
     <symbol id="i-layers" viewBox="0 0 16 16"><path d="M8 2l6 3-6 3-6-3z"/><path d="M2 8l6 3 6-3M2 11l6 3 6-3"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 9h5.6l.7-9"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.5"/><path d="M13 2.5v3h-3"/></symbol>
+    <symbol id="i-panel" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M6 2.5v11"/></symbol>
+    <symbol id="i-repo" viewBox="0 0 16 16"><path d="M3.5 13V3a1 1 0 0 1 1-1h8v10h-8a1 1 0 0 0-1 1 1 1 0 0 0 1 1h8"/><path d="M6 2v5l1.25-1 1.25 1V2"/></symbol>
   </defs>
 </svg>
 
@@ -424,7 +470,7 @@ body.alt .althint .on{display:inline}
 <header class="top">
   <div class="masthead">
     <div class="id">
-      <span class="eyebrow">Creatiwity Incubator · planche design v0.4 · open source</span>
+      <span class="eyebrow">Creatiwity Incubator · planche design v0.5 · open source</span>
       <h1>Ramure</h1>
       <p class="lede">Viewer git de bureau (Tauri · Rust · Vue) centré sur un commit graph très lisible. Les gestes (glisser, menu, palette) produisent des commandes git natives, copiées (niveau 0) ou exécutées dans votre terminal (niveau 1). Ramure ne modifie jamais le dépôt lui-même.</p>
     </div>
@@ -554,10 +600,106 @@ body.alt .althint .on{display:inline}
   </ul>
 </section>
 
+<!-- C: workspaces -->
+<section class="plate" id="espaces">
+  <div class="plate-head">
+    <div class="t"><span class="letter">C</span><h2>Espaces de travail</h2></div>
+    <p>Un dossier racine (<span class="mono">~/code</span>, <span class="mono">~/clients</span>…) sert de contexte. Le panneau latéral, repliable, montre les dépôts ouverts récemment dans ce contexte et l'arbre des dépôts trouvés dessous. Les dossiers qui ne contiennent qu'un sous-dossier sont fusionnés en une ligne, comme dans VS Code.</p>
+  </div>
+  <div class="canvas-pad">
+    <div class="wsgrid">
+      <figure>
+        <div class="wsp">
+          <div class="hd"><span class="eyebrow" style="font-size:10.5px">Espace</span><span class="ic"><svg class="i"><use href="#i-panel"/></svg></span></div>
+          <div class="rootbtn"><svg class="i"><use href="#i-folder"/></svg><span class="sp">code</span><svg class="i" style="transform:rotate(90deg);color:var(--ink-3)"><use href="#i-chev"/></svg></div>
+          <div class="sh"><span class="eyebrow" style="font-size:10.5px">Récents</span></div>
+          <div class="rc cur"><svg class="i"><use href="#i-repo"/></svg><span class="two"><b>sherpa</b><small>creatiwity · à l'instant</small></span><kbd>⌘1</kbd></div>
+          <div class="rc"><svg class="i"><use href="#i-repo"/></svg><span class="two"><b>api</b><small>clients/acme/apps · il y a 3 h</small></span><kbd>⌘2</kbd></div>
+          <div class="rc"><svg class="i"><use href="#i-repo"/></svg><span class="two"><b>ramure</b><small>creatiwity · hier</small></span><kbd>⌘3</kbd></div>
+          <div class="sh"><span class="eyebrow" style="font-size:10.5px">Dépôts</span><span class="n">6</span><span class="ic"><svg class="i"><use href="#i-refresh"/></svg></span></div>
+          <div class="flt"><svg class="i"><use href="#i-search"/></svg>Filtrer les dépôts</div>
+          <div class="nd" style="padding-left:10px"><svg class="i tw open"><use href="#i-chev"/></svg><svg class="i"><use href="#i-folder"/></svg>clients / acme / apps</div>
+          <div class="nd repo" style="padding-left:24px"><span class="sp"></span><svg class="i"><use href="#i-repo"/></svg>api<span class="br">main</span></div>
+          <div class="nd repo" style="padding-left:24px"><span class="sp"></span><svg class="i"><use href="#i-repo"/></svg>site<span class="br">develop</span></div>
+          <div class="nd" style="padding-left:10px"><svg class="i tw open"><use href="#i-chev"/></svg><svg class="i"><use href="#i-folder"/></svg>creatiwity</div>
+          <div class="nd repo" style="padding-left:24px"><span class="sp"></span><svg class="i"><use href="#i-repo"/></svg>ramure<span class="br">main</span></div>
+          <div class="nd repo cur" style="padding-left:24px"><span class="sp"></span><svg class="i"><use href="#i-repo"/></svg>sherpa<span class="br">feature/scoring</span></div>
+          <div class="nd" style="padding-left:10px"><svg class="i tw"><use href="#i-chev"/></svg><svg class="i"><use href="#i-folder"/></svg>perso</div>
+          <div class="nd repo" style="padding-left:10px"><span class="sp"></span><svg class="i"><use href="#i-repo"/></svg>dotfiles<span class="br">main</span></div>
+        </div>
+        <figcaption class="wscap">Contexte « code », dépôt ouvert surligné</figcaption>
+      </figure>
+      <figure>
+        <div class="wsp">
+          <div class="hd"><span class="eyebrow" style="font-size:10.5px">Espace</span><span class="ic"><svg class="i"><use href="#i-panel"/></svg></span></div>
+          <div class="rootbtn"><svg class="i"><use href="#i-folder"/></svg><span class="sp">code</span><svg class="i" style="transform:rotate(-90deg);color:var(--ink-3)"><use href="#i-chev"/></svg></div>
+          <div class="menu2">
+            <div class="mrow cur"><svg class="i"><use href="#i-check"/></svg><span class="two"><b>code</b><small>~/code</small></span><span class="del"><svg class="i"><use href="#i-trash"/></svg></span></div>
+            <div class="mrow"><svg class="i"><use href="#i-folder"/></svg><span class="two"><b>clients</b><small>~/clients</small></span><span class="conf">Retirer</span></div>
+            <div class="mrow"><svg class="i"><use href="#i-folder"/></svg><span class="two"><b>perso</b><small>~/perso</small></span><span class="del"><svg class="i"><use href="#i-trash"/></svg></span></div>
+            <div class="msep"></div>
+            <div class="mrow"><svg class="i"><use href="#i-plus"/></svg>Ajouter un dossier racine…</div>
+          </div>
+          <div class="sh dim" style="margin-top:196px"><span class="eyebrow" style="font-size:10.5px">Dépôts</span></div>
+        </div>
+        <figcaption class="wscap">Changer de contexte ; retirer demande une confirmation</figcaption>
+      </figure>
+      <figure>
+        <div class="wsp">
+          <div class="hd"><span class="eyebrow" style="font-size:10.5px">Espace</span><span class="ic"><svg class="i"><use href="#i-panel"/></svg></span></div>
+          <div class="rootbtn"><svg class="i"><use href="#i-folder"/></svg><span class="sp">code</span><svg class="i" style="transform:rotate(90deg);color:var(--ink-3)"><use href="#i-chev"/></svg></div>
+          <div class="sh"><span class="eyebrow" style="font-size:10.5px">Dépôts</span><span class="n">6</span><span class="ic"><svg class="i"><use href="#i-refresh"/></svg></span></div>
+          <div class="flt on"><svg class="i"><use href="#i-search"/></svg>acm<span class="caret" style="display:inline-block;width:1px;height:14px;background:var(--accent)"></span></div>
+          <div class="nd repo"><svg class="i"><use href="#i-repo"/></svg><span>clients/<mark>acm</mark>e/apps/api</span><span class="br">main</span></div>
+          <div class="nd repo"><svg class="i"><use href="#i-repo"/></svg><span>clients/<mark>acm</mark>e/apps/site</span><span class="br">develop</span></div>
+          <div class="note">↵ ouvre le premier résultat</div>
+        </div>
+        <figcaption class="wscap">Filtre : liste plate, correspondance floue sur le chemin</figcaption>
+      </figure>
+      <figure>
+        <div class="wsp">
+          <div class="hd"><span class="eyebrow" style="font-size:10.5px">Espace</span><span class="ic"><svg class="i"><use href="#i-panel"/></svg></span></div>
+          <div class="rootbtn"><svg class="i"><use href="#i-folder"/></svg><span class="sp" style="font-weight:500;color:var(--ink-2)">Aucun dossier racine</span></div>
+          <div class="empty2">
+            <p style="margin:0">Choisissez un dossier racine (par exemple <span class="mono">~/code</span>) : Ramure y trouve vos dépôts et retient ceux que vous ouvrez.</p>
+            <span class="b primary" style="align-self:flex-start"><svg class="i"><use href="#i-plus"/></svg>Ajouter un dossier racine…</span>
+          </div>
+        </div>
+        <figcaption class="wscap">Premier lancement</figcaption>
+      </figure>
+    </div>
+    <div class="stack" style="gap:14px;width:100%">
+      <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start">
+        <figure style="margin:0;display:flex;flex-direction:column;gap:8px">
+          <div class="rail"><span class="tg on"><svg class="i"><use href="#i-panel"/></svg></span><b>sherpa</b><span style="color:var(--ink-2)">feature/scoring</span><span style="margin-left:18px;color:var(--ink-3)">…</span></div>
+          <figcaption class="wscap" style="text-align:left">Bouton de la barre d'outils, <kbd>⌘⇧E</kbd> : replie ou déplie le panneau (état mémorisé)</figcaption>
+        </figure>
+        <div class="palette" style="max-width:520px">
+          <div class="in"><svg class="i" style="width:16px;height:16px;color:var(--ink-3)"><use href="#i-search"/></svg><span>api<span class="caret" style="display:inline-block;width:1px;height:16px;background:var(--accent);vertical-align:-3px"></span></span></div>
+          <div class="res">
+            <div class="mlabel">Dépôts récents</div>
+            <div class="mi hot"><svg class="i"><use href="#i-repo"/></svg><span class="two"><span><b>api</b></span><span class="cmd">code · clients/acme/apps/api · il y a 3 h</span></span><span class="k">⌘2</span></div>
+            <div class="mlabel">Dépôts de code</div>
+            <div class="mi"><svg class="i"><use href="#i-repo"/></svg><span class="two"><span>site</span><span class="cmd">clients/acme/apps/site · develop</span></span></div>
+            <div class="mlabel">Espaces</div>
+            <div class="mi"><svg class="i"><use href="#i-folder"/></svg><span class="two"><span>Passer à clients</span><span class="cmd">~/clients</span></span></div>
+          </div>
+          <div class="foot"><span><kbd>↑</kbd><kbd>↓</kbd> naviguer</span><span><kbd>↵</kbd> ouvrir</span><span><kbd>esc</kbd> fermer</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <ul><li><b>Récents par contexte</b>, avec la date d'ouverture ; les 9 premiers ont un raccourci <kbd>⌘1</kbd>…<kbd>⌘9</kbd>. Un dépôt ouvert hors de toute racine va dans « hors espace » et rejoint le contexte si l'on ajoute sa racine.</li><li>Tout est sauvegardé automatiquement, dans la configuration de Ramure et jamais dans un dépôt.</li></ul>
+    <ul><li><b>Arbre élagué</b> : seuls les chemins qui mènent à un dépôt. On ne descend ni dans un dépôt ni dans <span class="mono">node_modules</span>, <span class="mono">target</span>… ; limite de 6 niveaux et 2 000 dépôts.</li><li>Branche courante lue dans <span class="mono">HEAD</span>, sans lancer git.</li></ul>
+    <ul><li><b>Palette</b> : récents de tous les contextes (l'actif d'abord), dépôts du contexte, changement de contexte, branches, actions.</li><li>Panneau ouvert sur un écran étroit : la colonne auteur du graph passe dans l'infobulle et les pastilles se resserrent.</li></ul>
+  </div>
+</section>
+
 <!-- C: search -->
 <section class="plate" id="recherche">
   <div class="plate-head">
-    <div class="t"><span class="letter">C</span><h2>Recherche au fil de la frappe</h2></div>
+    <div class="t"><span class="letter">D</span><h2>Recherche au fil de la frappe</h2></div>
     <p>Mode « surligner » : le graph reste intact, les commits hors résultats s'estompent, <kbd>↵</kbd> / <kbd>⇧↵</kbd> passe d'un résultat à l'autre et la minimap marque les résultats sur tout l'historique.</p>
   </div>
   <div class="scroll">
@@ -580,7 +722,7 @@ body.alt .althint .on{display:inline}
 <!-- D: stacked branch + command sheet -->
 <section class="plate" id="onto">
   <div class="plate-head">
-    <div class="t"><span class="letter">D</span><h2>Branche empilée et fiche de commande</h2></div>
+    <div class="t"><span class="letter">E</span><h2>Branche empilée et fiche de commande</h2></div>
     <p><span class="mono">develop</span> a été rebasée sur <span class="mono">main</span> ; <span class="mono">feat/a</span> repose encore sur les anciens commits (en pointillé). Ramure le détecte et prépare <span class="mono">git rebase --onto</span>. La fiche de commande est le composant commun à toutes les actions.</p>
   </div>
   <div class="scroll">
@@ -614,14 +756,14 @@ body.alt .althint .on{display:inline}
   <div class="notes">
     <ul><li>Détection : reflog de la base (<span class="mono">merge-base --fork-point</span>) croisé avec l'équivalence de patchs (<span class="mono">git cherry</span>).</li><li>Les anciens commits restent affichés en pointillé, avec le sha de leur nouvelle version.</li></ul>
     <ul><li>Geste manuel : sélectionner une plage (clic puis <kbd>⇧</kbd>clic) et la glisser sur la nouvelle base.</li><li>Pile <span class="mono">feat/a ← feat/b</span> : Ramure propose <span class="mono">--update-refs</span> pour tout déplacer d'un coup.</li></ul>
-    <ul><li>Quand la commande est exécutée, le watcher la détecte et affiche l'annulation (planche J).</li><li>Si une ref bouge avant l'exécution, la fiche passe « périmée » et propose de régénérer.</li></ul>
+    <ul><li>Quand la commande est exécutée, le watcher la détecte et affiche l'annulation (planche K).</li><li>Si une ref bouge avant l'exécution, la fiche passe « périmée » et propose de régénérer.</li></ul>
   </div>
 </section>
 
 <!-- E: terminal integration -->
 <section class="plate" id="terminal">
   <div class="plate-head">
-    <div class="t"><span class="letter">E</span><h2>Intégration terminal</h2></div>
+    <div class="t"><span class="letter">F</span><h2>Intégration terminal</h2></div>
     <p>Niveau 0 : les boutons copient. Niveau 1 : ils exécutent dans le terminal choisi, et <kbd>⌥</kbd> les rebascule en « Copier » tant qu'elle est enfoncée. Essayez : maintenez <kbd>⌥</kbd> (Alt) sur cette page.</p>
   </div>
   <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr))">
@@ -687,7 +829,7 @@ body.alt .althint .on{display:inline}
 <!-- E: DnD -->
 <section class="plate" id="dnd">
   <div class="plate-head">
-    <div class="t"><span class="letter">F</span><h2>Drag &amp; drop</h2></div>
+    <div class="t"><span class="letter">G</span><h2>Drag &amp; drop</h2></div>
     <p>On attrape une pastille, les cibles valides s'éclairent et l'action par défaut s'écrit sous le curseur. Au lâcher, le menu classe les actions et affiche la commande ; choisir une action ouvre sa fiche, <kbd>↵</kbd> copie directement.</p>
   </div>
   <div class="scroll">
@@ -706,7 +848,7 @@ body.alt .althint .on{display:inline}
 <!-- F: rebase -->
 <section class="plate" id="rebase">
   <div class="plate-head">
-    <div class="t"><span class="letter">G</span><h2>Rebase interactif</h2></div>
+    <div class="t"><span class="letter">H</span><h2>Rebase interactif</h2></div>
     <p>La todo-list de git, rendue éditable : action par ligne au clavier (<kbd>p</kbd> <kbd>r</kbd> <kbd>e</kbd> <kbd>s</kbd> <kbd>f</kbd> <kbd>d</kbd>), réordonnancement à la poignée ou <kbd>⌥↑</kbd>/<kbd>⌥↓</kbd>, reword en ligne. Le résultat est une seule commande qui applique cette todo sans éditeur.</p>
   </div>
   <div class="scroll">
@@ -749,7 +891,7 @@ body.alt .althint .on{display:inline}
 <div class="grid2">
   <section class="plate" id="palette">
     <div class="plate-head">
-      <div class="t"><span class="letter">H</span><h2>Palette de commandes</h2></div>
+      <div class="t"><span class="letter">I</span><h2>Palette de commandes</h2></div>
       <p>Même moteur flou que la recherche, étendu aux actions, branches, tags et fichiers. Chaque action montre la commande qu'elle va produire.</p>
     </div>
     <div class="canvas-pad">
@@ -775,7 +917,7 @@ body.alt .althint .on{display:inline}
 
   <section class="plate" id="menu">
     <div class="plate-head">
-      <div class="t"><span class="letter">I</span><h2>Menu contextuel d'un commit</h2></div>
+      <div class="t"><span class="letter">J</span><h2>Menu contextuel d'un commit</h2></div>
       <p>Groupes stables (naviguer · créer · appliquer · déplacer · copier). Le sous-menu reset montre la commande de chaque variante ; <span class="mono">--keep</span> est proposé par défaut car il refuse de perdre des modifications.</p>
     </div>
     <div class="canvas-pad" style="gap:16px">
@@ -808,7 +950,7 @@ body.alt .althint .on{display:inline}
 <!-- I: states -->
 <section class="plate" id="etats">
   <div class="plate-head">
-    <div class="t"><span class="letter">J</span><h2>États : opération en cours, exécution détectée, fiche périmée</h2></div>
+    <div class="t"><span class="letter">K</span><h2>États : opération en cours, exécution détectée, fiche périmée</h2></div>
     <p>Ramure observe le dépôt : il voit un rebase lancé dans le terminal, propose les commandes pour continuer, et confirme quand une commande générée a été exécutée.</p>
   </div>
   <div class="grid2">
@@ -845,7 +987,7 @@ body.alt .althint .on{display:inline}
 <!-- J: tokens -->
 <section class="plate" id="tokens">
   <div class="plate-head">
-    <div class="t"><span class="letter">K</span><h2>Fondations</h2></div>
+    <div class="t"><span class="letter">L</span><h2>Fondations</h2></div>
     <p>Neutres légèrement bleutés, un seul accent d'interface, huit couleurs de lanes et leurs versions désaturées pour le mode focus, une coloration dédiée aux commandes.</p>
   </div>
   <div class="tok">
@@ -893,7 +1035,7 @@ body.alt .althint .on{display:inline}
   </div>
 </section>
 
-<footer><span>Ramure · planche design v0.4 · septembre 2026 · MIT OR Apache-2.0</span><span>Références : spec-ramure.md (F-xx), ux-graph.md (D1–D8)</span><span>Données d'exemple fictives inspirées du projet sherpa</span></footer>
+<footer><span>Ramure · planche design v0.5 · septembre 2026 · MIT OR Apache-2.0</span><span>Références : spec-ramure.md (F-xx), ux-graph.md (D1–D8)</span><span>Données d'exemple fictives inspirées du projet sherpa</span></footer>
 </div>
 
 <script>
