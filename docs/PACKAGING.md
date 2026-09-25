@@ -1,7 +1,8 @@
 # Packaging et signature de Ramure
 
 Ce guide explique comment le pipeline de release produit les installeurs, quels secrets il
-attend, comment les obtenir côté Apple et comment les enregistrer dans GitHub.
+attend, comment les obtenir côté Apple (et, à venir, côté Windows : §8) et comment les
+enregistrer dans GitHub.
 
 ## 1. Ce que fait le pipeline
 
@@ -18,7 +19,7 @@ Installeurs produits par `release.yml` :
 |------------|----------|-----------|
 | macOS 12+ (binaire universel Apple Silicon + Intel) | `.dmg` | **Signé** avec le certificat *Developer ID Application* de Creatiwity et **notarisé** par Apple (ticket agrafé à l'application). |
 | Linux | `.AppImage`, `.deb`, `.rpm` | Non signé. |
-| Windows 10/11 | `.msi`, `-setup.exe` | Non signé pour l'instant (SmartScreen affiche un avertissement). |
+| Windows 10/11 | `.msi`, `-setup.exe` | Non signé pour l'instant (SmartScreen affiche un avertissement) ; procédure au §8. |
 
 Deux modes :
 
@@ -192,10 +193,141 @@ xcrun stapler validate /Applications/Ramure.app     # The validate action worked
 | `spctl` : « rejected » | Application signée mais pas notarisée, ou certificat de type *Apple Development* au lieu de *Developer ID Application*. |
 | Certificat expiré (au bout de 5 ans) | En créer un nouveau (§3.1) et mettre à jour `APPLE_CERTIFICATE` et `APPLE_CERTIFICATE_PASSWORD`. |
 
-## 8. Pas encore couvert
+## 8. Signer pour Windows
 
-- Signature Windows (Authenticode, ou Azure Trusted Signing) : supprimerait l'avertissement
-  SmartScreen.
+### 8.1 Quelle option choisir
+
+Un certificat Authenticode classique (OV ou EV) coûte plusieurs centaines d'euros par an et,
+depuis juin 2023, sa clé privée doit être stockée sur un module matériel (clé USB ou HSM dans le
+cloud), ce qui complique la CI. Depuis 2024, un certificat EV n'efface plus l'avertissement
+SmartScreen immédiatement : EV et OV construisent leur réputation de la même manière. Payer un
+EV n'apporte donc plus rien ici.
+
+| Option | Coût | Éditeur affiché | CI GitHub | Verdict |
+|--------|------|-----------------|-----------|---------|
+| **Azure Artifact Signing** (ex-*Trusted Signing*), SKU *Basic* | 9,99 $/mois (5 000 signatures) | **Creatiwity** | Oui, via `signCommand` de Tauri | **Recommandée** |
+| SignPath Foundation (programme open source) | Gratuit | *SignPath Foundation* | Oui, mais signature après le build et validation manuelle de chaque release | Possible, plus contraignante |
+| Certificat OV classique (Sectigo, Certum…) | Plusieurs centaines d'euros par an, plus le support matériel | Creatiwity | Difficile (clé matérielle, code à usage unique) | À éviter |
+
+Artifact Signing est ouvert aux **organisations de l'Union européenne** (les particuliers doivent
+être aux États-Unis ou au Canada) : Creatiwity est éligible. Microsoft détient la clé et émet
+des certificats de courte durée renouvelés automatiquement ; il n'y a aucun fichier de
+certificat à gérer ni à faire expirer. Une release signe 3 à 5 fichiers, très loin de la limite
+des 5 000 signatures mensuelles.
+
+SignPath reste une option de repli si l'on ne veut rien payer : le projet est open source et
+sans composant propriétaire, ce qui correspond à ses conditions. Mais l'installeur affiche
+« SignPath Foundation » comme éditeur, chaque release attend une validation dans leur interface,
+et la signature intervient après le build de Tauri : il faudrait resigner les archives de
+l'updater (§9) après coup.
+
+Dans tous les cas, SmartScreen peut encore avertir sur les premières versions signées, le temps
+que l'éditeur se fasse une réputation. Signer chaque release avec la même identité la fait
+progresser d'une version à l'autre.
+
+### 8.2 Mise en place d'Azure Artifact Signing (une seule fois)
+
+Prévoir de 1 à 20 jours ouvrés pour la validation d'identité, faite par Microsoft.
+
+1. **Abonnement Azure** : se connecter au [portail Azure](https://portal.azure.com) avec un compte
+   Creatiwity et créer un abonnement à l'usage (*pay-as-you-go*) s'il n'y en a pas.
+2. **Fournisseur de ressources** : *Abonnements → (l'abonnement) → Fournisseurs de ressources*,
+   enregistrer `Microsoft.CodeSigning`. En ligne de commande :
+   `az provider register --namespace "Microsoft.CodeSigning"`.
+3. **Compte Artifact Signing** : créer une ressource *Artifact Signing Account*, SKU **Basic**,
+   dans une région européenne. Noter le nom du compte et l'endpoint de la région :
+
+   | Région | Endpoint |
+   |--------|----------|
+   | West Europe | `https://weu.codesigning.azure.net` |
+   | North Europe | `https://neu.codesigning.azure.net` |
+   | Poland Central | `https://plc.codesigning.azure.net` |
+   | Switzerland North | `https://swn.codesigning.azure.net` |
+
+4. **Rôle de validation** : sur le compte, *Contrôle d'accès (IAM) → Ajouter une attribution de
+   rôle*, donner à la personne qui fera la demande le rôle **Artifact Signing Identity Verifier**
+   (elle doit aussi avoir au moins le rôle *Lecteur* sur l'abonnement).
+5. **Validation d'identité** : sur le compte, *Identity validations → New identity → Public*,
+   type *Organization*. Renseigner la raison sociale exacte de Creatiwity, son adresse, et un
+   e-mail **sur le domaine de Creatiwity** (le lien de vérification expire au bout de 7 jours).
+   Le représentant désigné passe ensuite une vérification individuelle avec sa pièce d'identité.
+   Microsoft peut demander un extrait Kbis de moins de 12 mois et une preuve de propriété du
+   domaine : les téléverser dans le portail (trois tentatives).
+6. **Profil de certificat** : une fois l'identité validée, *Certificate profiles → Create →*
+   **Public Trust**, rattaché à cette validation. Noter le nom du profil (par exemple `ramure`).
+7. **Application pour la CI** : dans *Microsoft Entra ID → Inscriptions d'applications →
+   Nouvelle inscription*, créer `ramure-release`. Noter l'*ID d'application (client)* et l'*ID de
+   l'annuaire (locataire)*. Dans *Certificats et secrets*, créer un **secret client** et copier
+   sa *Valeur* tout de suite (elle n'est plus affichée ensuite). Noter aussi sa date
+   d'expiration (24 mois au plus).
+8. **Droit de signer** : sur le **profil de certificat**, *Contrôle d'accès (IAM)*, donner à
+   l'application `ramure-release` le rôle **Artifact Signing Certificate Profile Signer**.
+
+### 8.3 Secrets et variables GitHub
+
+Dans l'environnement `release` (§4.1). L'endpoint et les noms ne sont pas secrets : ce sont des
+*variables* d'environnement.
+
+| Nom | Type | Valeur |
+|-----|------|--------|
+| `AZURE_TENANT_ID` | secret | ID de l'annuaire (locataire) |
+| `AZURE_CLIENT_ID` | secret | ID d'application (client) de `ramure-release` |
+| `AZURE_CLIENT_SECRET` | secret | Valeur du secret client |
+| `AZURE_SIGNING_ENDPOINT` | variable | par exemple `https://weu.codesigning.azure.net` |
+| `AZURE_SIGNING_ACCOUNT` | variable | nom du compte Artifact Signing |
+| `AZURE_SIGNING_PROFILE` | variable | nom du profil de certificat |
+
+```sh
+REPO=Creatiwity/ramure
+gh secret set AZURE_TENANT_ID     --env release --repo $REPO --body "…"
+gh secret set AZURE_CLIENT_ID     --env release --repo $REPO --body "…"
+gh secret set AZURE_CLIENT_SECRET --env release --repo $REPO     # saisie masquée
+gh variable set AZURE_SIGNING_ENDPOINT --env release --repo $REPO --body "https://weu.codesigning.azure.net"
+gh variable set AZURE_SIGNING_ACCOUNT  --env release --repo $REPO --body "…"
+gh variable set AZURE_SIGNING_PROFILE  --env release --repo $REPO --body "ramure"
+```
+
+Mettre un rappel avant l'expiration du secret client : il faudra en créer un nouveau et
+remplacer `AZURE_CLIENT_SECRET`.
+
+### 8.4 Ce qui changera dans le pipeline
+
+À brancher une fois le profil de certificat créé :
+
+- Sur le runner Windows, installer [`artifact-signing-cli`](https://github.com/Levminer/artifact-signing-cli)
+  (outil recommandé par la documentation de Tauri ; .NET, Azure CLI et `signtool` sont déjà
+  présents sur `windows-latest`).
+- Passer à Tauri un fichier de configuration supplémentaire, uniquement dans le pipeline, pour
+  que les builds locales des contributeurs ne tentent pas de signer :
+
+  ```json
+  {
+    "bundle": {
+      "windows": {
+        "signCommand": "artifact-signing-cli -e <endpoint> -a <compte> -c <profil> -d Ramure %1"
+      }
+    }
+  }
+  ```
+
+  `-d Ramure` fixe le nom affiché dans la fenêtre de contrôle de compte (UAC) à l'installation
+  du `.msi`. Tauri signe ainsi l'exécutable, le `.msi` et l'installeur `-setup.exe`.
+- Comme sur macOS : signature obligatoire sur un tag (échec explicite si un secret manque),
+  facultative en lancement manuel, puis vérification par
+  `signtool verify /pa /v` (ou `Get-AuthenticodeSignature`, qui doit renvoyer `Valid`).
+
+### 8.5 Vérifier un installeur signé
+
+Sous Windows : clic droit sur le `.msi` → *Propriétés → Signatures numériques*, l'éditeur doit
+être Creatiwity. En PowerShell :
+
+```powershell
+Get-AuthenticodeSignature .\Ramure_0.2.0_x64_en-US.msi | Format-List Status, SignerCertificate
+```
+
+## 9. Pas encore couvert
+
+- Signature Windows : procédure décrite au §8, pas encore branchée dans le pipeline.
 - Mises à jour automatiques (plugin updater de Tauri) : demandera une paire de clés
   `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` et `uploadUpdaterJson`.
 - Notarisation du `.dmg` lui-même : aujourd'hui l'application qu'il contient est notarisée et
