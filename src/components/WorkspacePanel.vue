@@ -141,6 +141,10 @@ function parentOf(path: string): string {
   const i = rel.lastIndexOf("/");
   return i > 0 ? rel.slice(0, i) : "";
 }
+
+function nodeTitle(n: TreeNode): string {
+  return n.worktree_of ? t("ws.worktreeOf", { repo: n.worktree_of, path: n.path }) : n.path;
+}
 </script>
 
 <template>
@@ -206,8 +210,8 @@ function parentOf(path: string): string {
       </label>
       <div class="tree">
         <template v-if="filter.trim()">
-          <button v-for="f in filtered" :key="f.item.path" class="node repo" :class="{ cur: f.item.path === current }" :title="f.item.path" @click="emit('open', f.item.path)">
-            <Icon name="repo" />
+          <button v-for="f in filtered" :key="f.item.path" class="node repo" :class="{ cur: f.item.path === current }" :title="nodeTitle(f.item)" @click="emit('open', f.item.path)">
+            <Icon :name="f.item.worktree_of ? 'wt' : 'repo'" />
             <span class="nm">{{ relativeTo(f.item.path, scan?.root ?? null) }}</span>
             <span v-if="f.item.branch" class="br">{{ f.item.branch }}</span>
           </button>
@@ -220,12 +224,12 @@ function parentOf(path: string): string {
             class="node"
             :class="[l.node.kind, { cur: l.node.path === current }]"
             :style="{ paddingLeft: 10 + l.depth * 14 + 'px' }"
-            :title="l.node.path"
+            :title="nodeTitle(l.node)"
             @click="l.node.kind === 'dir' ? toggle(l.node) : emit('open', l.node.path)"
           >
             <Icon v-if="l.node.kind === 'dir'" name="chev" class="tw" :class="{ open: expanded.has(l.node.path) }" />
             <span v-else class="tw-space"></span>
-            <Icon :name="l.node.kind === 'dir' ? 'folder' : 'repo'" />
+            <Icon :name="l.node.kind === 'dir' ? 'folder' : l.node.worktree_of ? 'wt' : 'repo'" />
             <span class="nm">{{ l.node.name }}</span>
             <span v-if="l.node.branch" class="br">{{ l.node.branch }}</span>
           </button>

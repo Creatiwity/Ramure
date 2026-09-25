@@ -58,6 +58,8 @@ pub struct RefInfo {
     pub synced_remote: Option<String>,
     /// Pour une distante : masquée dans le graph car fusionnée avec sa locale.
     pub merged_into_local: bool,
+    /// Branche locale extraite dans un autre worktree : chemin de ce worktree.
+    pub worktree: Option<String>,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -83,6 +85,9 @@ pub struct Timings {
 pub struct Repo {
     pub workdir: PathBuf,
     pub git_dir: PathBuf,
+    /// Dossier git commun (refs, objets) : égal à `git_dir` sauf dans un worktree lié, où
+    /// `git_dir` vaut `<commun>/worktrees/<nom>`.
+    pub common_dir: PathBuf,
     pub name: String,
     pub commits: Vec<CommitInfo>,
     pub refs: Vec<RefInfo>,
@@ -100,6 +105,8 @@ pub struct Repo {
     pub timings: Timings,
     /// Refs par ligne (indices dans `refs`).
     pub refs_by_row: HashMap<u32, Vec<u32>>,
+    /// Worktrees du dépôt, le principal en premier (un seul s'il n'y en a pas d'autre).
+    pub worktrees: Vec<gitcli::Worktree>,
 }
 
 /// Branches considérées comme tronc, par priorité.
@@ -113,7 +120,12 @@ impl Repo {
         }
         let repo = gix::discover(path.as_ref()).map_err(|e| Error::Open(e.to_string()))?;
         let workdir = repo.workdir().map(Path::to_path_buf).ok_or(Error::BareRepo)?;
-        let git_dir = repo.git_dir().to_path_buf();
+        // Chemins normalisés : dans un worktree lié, gix renvoie le dossier commun sous la forme
+        // `<commun>/worktrees/<nom>/../..`, que le watcher ne pourrait pas comparer aux chemins
+        // des événements.
+        let canonical = |p: &Path| p.canonicalize().unwrap_or_else(|_| p.to_path_buf());
+        let git_dir = canonical(repo.git_dir());
+        let common_dir = canonical(repo.common_dir());
         let name = workdir.file_name().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
 
         // 1. Refs.
@@ -263,6 +275,7 @@ impl Repo {
                 head: false,
                 synced_remote: None,
                 merged_into_local: false,
+                worktree: None,
             });
         }
 
@@ -297,7 +310,20 @@ impl Repo {
                 head: r.kind == RefKind::Local && head_branch.as_deref() == Some(r.name.as_str()),
                 synced_remote: None,
                 merged_into_local: false,
+                worktree: None,
             });
+        }
+        // Worktrees : une branche extraite ailleurs ne peut être ni switchée ni rebasée ici.
+        let mut worktrees = gitcli::worktrees(&workdir);
+        let here = workdir.canonicalize().unwrap_or_else(|_| workdir.clone());
+        for w in &mut worktrees {
+            w.current = Path::new(&w.path).canonicalize().is_ok_and(|p| p == here);
+        }
+        for r in refs.iter_mut().filter(|r| r.kind == RefKind::Local) {
+            r.worktree = worktrees
+                .iter()
+                .find(|w| !w.current && w.branch.as_deref() == Some(r.name.as_str()))
+                .map(|w| w.path.clone());
         }
         let locals: Vec<(usize, String, u32)> = refs
             .iter()
@@ -387,6 +413,7 @@ impl Repo {
         Ok(Repo {
             workdir,
             git_dir,
+            common_dir,
             name,
             commits,
             refs,
@@ -401,6 +428,7 @@ impl Repo {
             search,
             timings,
             refs_by_row,
+            worktrees,
         })
     }
 

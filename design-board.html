@@ -228,6 +228,22 @@ mark{background:var(--mark);color:var(--mark-ink);border-radius:2px;padding:0 1p
 .dlbar i{display:block;height:100%;width:36%;background:var(--accent);border-radius:3px}
 .upd-note{padding:14px 14px 16px;color:var(--ink-3);font-size:12px;display:flex;flex-direction:column;gap:6px}
 .upd-note .ln{height:8px;border-radius:4px;background:var(--app-line)}
+.wtlist{display:flex;flex-direction:column}
+.wti{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:2px 8px;padding:6px 12px 6px 14px;color:var(--ink-2);align-items:center}
+.wti .i{color:var(--ink-3)}
+.wti b{color:var(--ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wti .p{grid-column:2/4;font:11px var(--f-mono);color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wti.cur{background:var(--app-sel)}
+.wti.cur .i{color:var(--accent)}
+.wti.gone{opacity:.6}
+.wti.gone b{text-decoration:line-through}
+.wtag{font:600 10px var(--f-ui);padding:1px 6px;border-radius:8px;white-space:nowrap;color:var(--ink-3);background:color-mix(in srgb,var(--ink-3) 14%,transparent)}
+.wtag.mod{color:var(--warn);background:var(--warn-bg)}
+.pill .wtmark{display:inline-flex;align-items:center;gap:3px;margin-left:2px;padding-left:5px;border-left:1px solid color-mix(in srgb,currentColor 35%,transparent);font-weight:500}
+.wt-refs{display:flex;flex-direction:column;gap:10px;padding:14px;background:var(--app-bg)}
+.wt-refs .wt-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.wt-tip{font:12px/1.4 var(--f-ui);background:var(--ink);color:var(--bg);border-radius:7px;padding:7px 9px;max-width:300px;box-shadow:var(--shadow)}
+.wt-tip .mono{opacity:.85}
 .progress{display:flex;gap:3px}
 .progress i{width:14px;height:4px;border-radius:2px;background:color-mix(in srgb,var(--warn) 30%,transparent)}
 .progress i.on{background:var(--warn)}
@@ -317,7 +333,7 @@ footer{border-top:1px solid var(--rule);padding-top:16px;color:var(--ink-3);font
 .chip.stale{color:var(--warn);background:var(--warn-bg)}
 .cmd-block{font:12.5px/1.6 var(--f-mono);background:var(--app-bg);border:1px solid var(--app-line);border-radius:8px;padding:9px 10px 9px 12px;display:flex;gap:10px;align-items:flex-start}
 .cmd-block code{flex:1;white-space:pre-wrap;word-break:break-word;font:inherit}
-.t-git{color:var(--ink-3)} .t-sub{color:var(--ink);font-weight:500} .t-flag{color:var(--l1)} .t-sha{color:var(--ink-2)} .t-ref{font-weight:500} .t-str{color:var(--l5)} .t-op{color:var(--ink-3)}
+.t-git{color:var(--ink-3)} .t-sub{color:var(--ink);font-weight:500} .t-flag{color:var(--l1)} .t-sha{color:var(--ink-2)} .t-ref{font-weight:500} .t-str{color:var(--l5)} .t-op{color:var(--ink-3)} .t-path{color:var(--ink-2);text-decoration:underline dotted color-mix(in srgb,var(--ink-3) 60%,transparent);text-underline-offset:3px}
 .explain{display:grid;grid-template-columns:max-content 1fr;gap:5px 12px;font-size:12px;margin:0}
 .explain dt{font:11.5px var(--f-mono);white-space:nowrap}
 .explain dd{margin:0;color:var(--ink-2)}
@@ -471,6 +487,7 @@ body.alt .althint .on{display:inline}
     <symbol id="i-refresh" viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.5"/><path d="M13 2.5v3h-3"/></symbol>
     <symbol id="i-panel" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M6 2.5v11"/></symbol>
     <symbol id="i-repo" viewBox="0 0 16 16"><path d="M3.5 13V3a1 1 0 0 1 1-1h8v10h-8a1 1 0 0 0-1 1 1 1 0 0 0 1 1h8"/><path d="M6 2v5l1.25-1 1.25 1V2"/></symbol>
+    <symbol id="i-wt" viewBox="0 0 16 16"><path d="M1.5 4.5a1 1 0 0 1 1-1h3.5l1.5 1.5h6a1 1 0 0 1 1 1v6.5a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/><circle cx="5.5" cy="10.5" r="1"/><circle cx="10.5" cy="8" r="1"/><path d="M5.5 9.5V8M6.5 10.5h2a2 2 0 0 0 2-2"/></symbol>
     <symbol id="i-globe" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5"/><path d="M1.5 8h13M8 1.5c2 2 2.6 4.2 2.6 6.5S10 12.5 8 14.5M8 1.5C6 3.5 5.4 5.7 5.4 8S6 12.5 8 14.5"/></symbol>
   </defs>
 </svg>
@@ -1046,6 +1063,70 @@ body.alt .althint .on{display:inline}
   </div>
 </section>
 
+<!-- N: worktrees -->
+<section class="plate" id="worktrees">
+  <div class="plate-head">
+    <div class="t"><span class="letter">N</span><h2>Worktrees</h2></div>
+    <p>Plusieurs arbres de travail sur un même dépôt (une branche par agent, un hotfix à côté du travail en cours). Ramure les liste, marque les branches extraites ailleurs et en tient compte dans ses commandes : git refuse de <span class="mono">switch</span> ou de rebaser une branche déjà extraite dans un autre worktree.</p>
+  </div>
+  <div class="grid2">
+    <div class="stack">
+      <div class="win" style="max-width:340px">
+        <aside class="side" style="border-right:0;gap:10px">
+          <div class="sgroup">
+            <div class="h">Worktrees <span>4</span></div>
+            <div class="wtlist">
+              <div class="wti cur"><svg class="i"><use href="#i-wt"/></svg><b>sherpa · feature/scoring</b><span class="wtag">ici</span><span class="p">~/code/sherpa</span></div>
+              <div class="wti"><svg class="i"><use href="#i-wt"/></svg><b>agent-1 · feat/agent-tasks</b><span class="wtag mod">modifié</span><span class="p">~/code/sherpa-wt/agent-1</span></div>
+              <div class="wti"><svg class="i"><use href="#i-wt"/></svg><b>hotfix · fix/pwa-cache</b><span class="wtag">verrouillé</span><span class="p">~/code/sherpa-wt/hotfix</span></div>
+              <div class="wti gone"><svg class="i"><use href="#i-wt"/></svg><b>spike-map · (détaché)</b><span class="wtag">introuvable</span><span class="p">/tmp/spike-map</span></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+      <p class="caption">Section de la barre latérale, sous Stashes : nom du dossier, branche, état (<i>modifié</i>, <i>verrouillé</i>, <i>introuvable</i> quand le dossier a disparu, à nettoyer par <span class="mono">git worktree prune</span>). Clic : ouvre ce worktree. Dans le panneau des espaces, il porte l'icône de worktree et « Worktree de sherpa » en infobulle. Menu contextuel : ouvrir dans le terminal, copier le chemin, commandes <span class="mono">remove</span>, <span class="mono">lock</span>, <span class="mono">prune</span>.</p>
+      <div class="win">
+        <div class="wt-refs">
+          <div class="wt-row">
+            <span class="pill head" style="--c:var(--l3)"><svg class="i"><use href="#i-check"/></svg>feature/scoring</span>
+            <span class="pill" style="--c:var(--l5)"><svg class="i"><use href="#i-laptop"/></svg>feat/agent-tasks<span class="wtmark"><svg class="i"><use href="#i-wt"/></svg>agent-1</span></span>
+            <span class="pill" style="--c:var(--l2)"><svg class="i"><use href="#i-laptop"/></svg>fix/pwa-cache<span class="wtmark"><svg class="i"><use href="#i-wt"/></svg>hotfix</span></span>
+          </div>
+          <div class="wt-tip"><b>feat/agent-tasks</b> est extraite dans le worktree <b>agent-1</b><br><span class="mono">~/code/sherpa-wt/agent-1</span> · 2 fichiers modifiés</div>
+        </div>
+      </div>
+      <p class="caption">Dans le graph et la barre latérale, une branche extraite dans un autre worktree porte le nom de ce worktree (icône seule quand la colonne des refs est étroite, nom dans l'infobulle). Le HEAD de chaque worktree est aussi un repère : la branche courante reste la seule en pastille pleine.</p>
+    </div>
+    <div class="stack">
+      <div class="win">
+        <div class="sheet">
+          <div class="hd"><svg class="i"><use href="#i-wt"/></svg><b>Nouveau worktree pour feat/onboarding</b><span class="chip ok">Prête</span></div>
+          <div class="cmd-block"><code><span class="t-git">git</span> <span class="t-sub">worktree add</span> <span class="t-path">../sherpa-wt/onboarding</span> <span class="t-ref" style="color:var(--l4)">feat/onboarding</span></code><span class="b primary" style="height:24px"><svg class="i"><use href="#i-term"/></svg>Exécuter</span></div>
+          <dl class="explain">
+            <dt><span class="t-path">../sherpa-wt/onboarding</span></dt><dd>dossier créé à côté du dépôt (modèle réglable : <span class="mono">../{dépôt}-wt/{branche}</span>)</dd>
+            <dt><span class="t-ref" style="color:var(--l4)">feat/onboarding</span></dt><dd>branche extraite dans ce dossier ; elle ne pourra plus l'être ici tant que le worktree existe</dd>
+          </dl>
+          <div class="opts">
+            <span class="tog"><i class="on"></i>branche existante</span>
+            <span class="tog"><i></i>nouvelle branche <span class="mono">-b</span></span>
+            <span class="tog"><i></i>ouvrir un onglet du terminal dans le dossier</span>
+          </div>
+          <div class="undo-line"><svg class="i"><use href="#i-undo"/></svg>Pour annuler : <code>git worktree remove ../sherpa-wt/onboarding</code><svg class="i" style="color:var(--ink-3)"><use href="#i-copy"/></svg></div>
+        </div>
+      </div>
+      <p class="caption">Gestes : menu contextuel d'une branche « Ouvrir dans un nouveau worktree », ou glisser la branche sur la section Worktrees. Au niveau 1 du terminal, un onglet s'ouvre déjà placé dans le dossier.</p>
+      <div class="win">
+        <div class="sheet">
+          <div class="hd"><svg class="i"><use href="#i-warn"/></svg><b>Switch vers feat/agent-tasks impossible ici</b><span class="chip stale">Bloquée</span></div>
+          <p style="color:var(--ink-2)">Cette branche est extraite dans le worktree <b>agent-1</b> (<span class="mono">~/code/sherpa-wt/agent-1</span>) : git refuserait <span class="mono">git switch feat/agent-tasks</span>.</p>
+          <div class="btnrow" style="justify-content:flex-end"><span class="b quiet">Copier le chemin</span><span class="b">Ouvrir dans le terminal</span><span class="b primary">Ouvrir ce worktree</span></div>
+        </div>
+      </div>
+      <p class="caption">Même garde pour un rebase ou un reset d'une branche extraite ailleurs, et pour une pile <span class="mono">--update-refs</span> dont une branche l'est : la fiche l'explique au lieu de produire une commande qui échouera.</p>
+    </div>
+  </div>
+</section>
+
 <!-- J: tokens -->
 <section class="plate" id="tokens">
   <div class="plate-head">
@@ -1106,7 +1187,7 @@ body.alt .althint .on{display:inline}
   </div>
 </section>
 
-<footer><span>Ramure · planche design v0.6 · septembre 2026 · MIT OR Apache-2.0</span><span>Références : spec-ramure.md (F-xx), ux-graph.md (D1–D8)</span><span>Données d'exemple fictives inspirées du projet sherpa</span></footer>
+<footer><span>Ramure · planche design v0.7 · septembre 2026 · MIT OR Apache-2.0</span><span>Références : spec-ramure.md (F-xx), ux-graph.md (D1–D8)</span><span>Données d'exemple fictives inspirées du projet sherpa</span></footer>
 </div>
 
 <script>

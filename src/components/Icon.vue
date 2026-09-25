@@ -26,6 +26,7 @@ export const PATHS = {
   panel: '<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M6 2.5v11"/>',
   plus: '<path d="M8 3v10M3 8h10"/>',
   down: '<path d="M8 2.5v9M4 8l4 4 4-4M3 14h10"/>',
+  wt: '<path d="M1.5 4.5a1 1 0 0 1 1-1h3.5l1.5 1.5h6a1 1 0 0 1 1 1v6.5a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/><circle cx="5.5" cy="10.5" r="1"/><circle cx="10.5" cy="8" r="1"/><path d="M5.5 9.5V8M6.5 10.5h2a2 2 0 0 0 2-2"/>',
   refresh: '<path d="M13 8a5 5 0 1 1-1.5-3.5"/><path d="M13 2.5v3h-3"/>',
   trash: '<path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 9h5.6l.7-9"/>',
   repo: '<path d="M3.5 13V3a1 1 0 0 1 1-1h8v10h-8a1 1 0 0 0-1 1 1 1 0 0 0 1 1h8"/><path d="M6 2v5l1.25-1 1.25 1V2"/>',

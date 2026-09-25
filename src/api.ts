@@ -15,6 +15,8 @@ export interface RefInfo {
   head: boolean;
   synced_remote: string | null;
   merged_into_local: boolean;
+  /** Branche locale extraite dans un autre worktree : chemin de ce worktree. */
+  worktree: string | null;
 }
 
 export interface WorkStatus {
@@ -46,6 +48,19 @@ export interface RepoSummary {
   identity: Identity;
   timings: Record<string, number>;
   git_version: string | null;
+  /** Worktrees du dépôt, le principal en premier (un seul s'il n'y en a pas d'autre). */
+  worktrees?: Worktree[];
+}
+
+export interface Worktree {
+  path: string;
+  name: string;
+  branch: string | null;
+  head: string | null;
+  main: boolean;
+  current: boolean;
+  locked: boolean;
+  prunable: boolean;
 }
 
 export interface RowRef {
@@ -53,6 +68,8 @@ export interface RowRef {
   kind: RefKind;
   head: boolean;
   remote: string | null;
+  /** Nom du worktree où cette branche est extraite, si ce n'est pas celui-ci. */
+  worktree: string | null;
 }
 
 export interface Row {
@@ -139,6 +156,8 @@ export interface TreeNode {
   path: string;
   kind: "dir" | "repo";
   branch: string | null;
+  /** Worktree lié : nom du dépôt principal. */
+  worktree_of?: string;
   children: TreeNode[];
 }
 
@@ -168,6 +187,8 @@ export interface Api {
   workspaceActivate(path: string | null): Promise<WorkspaceStore>;
   workspaceForget(repo: string): Promise<WorkspaceStore>;
   workspaceScan(path: string): Promise<ScanResult>;
+  /** Modifications non commitées de chaque worktree (`null` : illisible ou disparu). */
+  worktreeDirty(paths: string[]): Promise<(boolean | null)[]>;
 }
 
 const tauriApi: Api = {
@@ -186,6 +207,7 @@ const tauriApi: Api = {
   workspaceActivate: (path) => invoke("workspace_activate", { path }),
   workspaceForget: (repo) => invoke("workspace_forget", { repo }),
   workspaceScan: (path) => invoke("workspace_scan", { path }),
+  worktreeDirty: (paths) => invoke("worktree_dirty", { paths }),
 };
 
 interface Sample {
@@ -327,6 +349,7 @@ export function sampleApi(load: () => Promise<Sample>): Api {
     workspaceActivate: async (p) => demoStore.activate(p),
     workspaceForget: async (p) => demoStore.forget(p),
     workspaceScan: async (p) => demoTree(p, (await get()).summary.path),
+    worktreeDirty: async (paths) => paths.map(() => null),
   };
 }
 

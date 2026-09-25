@@ -134,6 +134,77 @@ pub fn stashes(repo: &Path) -> Vec<StashEntry> {
         .collect()
 }
 
+/// Un arbre de travail du dépôt (`git worktree list`).
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+pub struct Worktree {
+    pub path: String,
+    /// Nom affiché : dernier segment du chemin.
+    pub name: String,
+    /// Branche extraite (nom court), `None` si HEAD détaché.
+    pub branch: Option<String>,
+    pub head: Option<String>,
+    /// Worktree principal (celui qui contient le dossier `.git`).
+    pub main: bool,
+    /// Worktree actuellement ouvert dans Ramure.
+    pub current: bool,
+    pub locked: bool,
+    /// Dossier disparu : à nettoyer par `git worktree prune`.
+    pub prunable: bool,
+}
+
+/// Worktrees du dépôt, le principal en premier. Vide si git est trop ancien ou échoue.
+pub fn worktrees(repo: &Path) -> Vec<Worktree> {
+    run(repo, &["worktree", "list", "--porcelain", "-z"])
+        .map(|out| parse_worktrees(&String::from_utf8_lossy(&out)))
+        .unwrap_or_default()
+}
+
+fn parse_worktrees(out: &str) -> Vec<Worktree> {
+    let mut list = Vec::new();
+    // `-z` : un champ par NUL, une ligne vide (double NUL) entre deux worktrees.
+    for record in out.split("\0\0").filter(|r| !r.trim_matches('\0').is_empty()) {
+        let mut wt: Option<Worktree> = None;
+        for field in record.split('\0').filter(|f| !f.is_empty()) {
+            let (key, value) = field.split_once(' ').unwrap_or((field, ""));
+            match key {
+                "worktree" => {
+                    let name = Path::new(value)
+                        .file_name()
+                        .map(|n| n.to_string_lossy().into_owned())
+                        .unwrap_or_default();
+                    wt = Some(Worktree {
+                        path: value.to_string(),
+                        name,
+                        branch: None,
+                        head: None,
+                        main: list.is_empty(),
+                        current: false,
+                        locked: false,
+                        prunable: false,
+                    });
+                }
+                "HEAD" => wt.iter_mut().for_each(|w| w.head = Some(value.to_string())),
+                "branch" => wt
+                    .iter_mut()
+                    .for_each(|w| w.branch = Some(value.strip_prefix("refs/heads/").unwrap_or(value).to_string())),
+                "locked" => wt.iter_mut().for_each(|w| w.locked = true),
+                "prunable" => wt.iter_mut().for_each(|w| w.prunable = true),
+                _ => {}
+            }
+        }
+        // Un dépôt nu n'a pas d'arbre de travail à ouvrir.
+        if let Some(w) = wt.filter(|_| !record.split('\0').any(|f| f == "bare")) {
+            list.push(w);
+        }
+    }
+    list
+}
+
+/// Des modifications non commitées dans cet arbre de travail ? (lecture seule)
+pub fn is_dirty(worktree: &Path) -> Result<bool, Error> {
+    run(worktree, &["status", "--porcelain", "--untracked-files=normal"]).map(|out| !out.is_empty())
+}
+
 #[derive(Debug, Clone, Default, serde::Serialize)]
 pub struct Identity {
     pub name: Option<String>,
@@ -391,6 +462,29 @@ pub fn wip_diff(repo: &Path, path: &str, untracked: bool) -> Result<String, Erro
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn worktrees_porcelain_z() {
+        let out = "worktree /r/main\0HEAD aaa\0branch refs/heads/main\0\0\
+worktree /r/wt/agent-1\0HEAD bbb\0branch refs/heads/feat/agent\0locked\0\0\
+worktree /tmp/spike\0HEAD ccc\0detached\0prunable gitdir file points to non-existent location\0\0";
+        let w = parse_worktrees(out);
+        assert_eq!(w.len(), 3);
+        assert!(w[0].main && w[0].branch.as_deref() == Some("main") && !w[0].locked);
+        assert_eq!(w[1].name, "agent-1");
+        assert_eq!(w[1].branch.as_deref(), Some("feat/agent"));
+        assert!(w[1].locked && !w[1].main);
+        assert!(w[2].branch.is_none() && w[2].prunable);
+        assert_eq!(w[2].head.as_deref(), Some("ccc"));
+    }
+
+    #[test]
+    fn worktrees_ignore_bare_main() {
+        let out = "worktree /r/repo.git\0bare\0\0worktree /r/wt\0HEAD aaa\0branch refs/heads/x\0\0";
+        let w = parse_worktrees(out);
+        assert_eq!(w.len(), 1);
+        assert_eq!(w[0].path, "/r/wt");
+    }
+
     use super::*;
 
     #[test]

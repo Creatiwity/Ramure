@@ -97,9 +97,13 @@ async fn open_repo(app: AppHandle, state: State<'_, AppState>, path: String) -> 
         *g += 1;
         *g
     };
-    let (workdir, git_dir) = (repo.workdir.clone(), repo.git_dir.clone());
+    let dirs = GitDirs {
+        workdir: repo.workdir.clone(),
+        git_dir: repo.git_dir.clone(),
+        common_dir: repo.common_dir.clone(),
+    };
     *state.repo.lock().unwrap() = Some(repo);
-    *state.watcher.lock().unwrap() = watch(app.clone(), workdir, git_dir, generation).ok();
+    *state.watcher.lock().unwrap() = watch(app.clone(), dirs, generation).ok();
     let _ = with_store(&app, &state, |st| st.record_open(&s.path));
     Ok(s)
 }
@@ -155,12 +159,38 @@ enum Change {
     Worktree,
 }
 
-fn classify(path: &Path, git_dir: &Path) -> Option<Change> {
-    if let Ok(rel) = path.strip_prefix(git_dir) {
+/// Dossiers à surveiller. Dans un worktree lié, les refs vivent dans le dossier commun, hors de
+/// l'arbre de travail : un commit fait depuis un autre worktree n'y serait pas vu sinon.
+#[derive(Clone)]
+struct GitDirs {
+    workdir: PathBuf,
+    git_dir: PathBuf,
+    common_dir: PathBuf,
+}
+
+fn classify(path: &Path, dirs: &GitDirs) -> Option<Change> {
+    // Le dossier git de ce worktree : HEAD, index, opération en cours.
+    if let Ok(rel) = path.strip_prefix(&dirs.git_dir) {
         let first = rel.components().next()?.as_os_str().to_string_lossy();
         // Les objets s'écrivent avant la mise à jour des refs ; les verrous sont transitoires.
         if first == "objects" || path.extension().is_some_and(|e| e == "lock") {
             return None;
+        }
+        // Dépôt principal : `worktrees/<nom>/` appartient aux autres worktrees. Seul leur HEAD
+        // compte (branche extraite ailleurs) ; leur index change à chaque `git status`.
+        if first == "worktrees" && dirs.git_dir == dirs.common_dir {
+            return (rel.components().nth(2)?.as_os_str() == "HEAD").then_some(Change::Refs);
+        }
+        return Some(Change::Refs);
+    }
+    // Worktree lié : refs partagées dans le dossier commun.
+    if let Ok(rel) = path.strip_prefix(&dirs.common_dir) {
+        let first = rel.components().next()?.as_os_str().to_string_lossy();
+        if first == "objects" || path.extension().is_some_and(|e| e == "lock") {
+            return None;
+        }
+        if first == "worktrees" {
+            return (rel.components().nth(2)?.as_os_str() == "HEAD").then_some(Change::Refs);
         }
         return Some(Change::Refs);
     }
@@ -169,24 +199,30 @@ fn classify(path: &Path, git_dir: &Path) -> Option<Change> {
 
 /// Surveille le dépôt et prévient le front : `repo-changed` (graph rechargé) ou
 /// `status-changed` (seul le statut de l'arbre de travail a changé).
-fn watch(app: AppHandle, workdir: PathBuf, git_dir: PathBuf, generation: u64) -> notify::Result<notify::RecommendedWatcher> {
+fn watch(app: AppHandle, dirs: GitDirs, generation: u64) -> notify::Result<notify::RecommendedWatcher> {
     let (tx, rx) = mpsc::channel::<Change>();
-    let gd = git_dir.clone();
+    let d = dirs.clone();
     let mut watcher = notify::recommended_watcher(move |res: notify::Result<notify::Event>| {
         if let Ok(ev) = res {
             if matches!(ev.kind, notify::EventKind::Access(_)) {
                 return;
             }
             for p in &ev.paths {
-                if let Some(c) = classify(p, &gd) {
+                if let Some(c) = classify(p, &d) {
                     let _ = tx.send(c);
                 }
             }
         }
     })?;
-    watcher.watch(&workdir, RecursiveMode::Recursive)?;
-    if !git_dir.starts_with(&workdir) {
-        watcher.watch(&git_dir, RecursiveMode::Recursive)?;
+    watcher.watch(&dirs.workdir, RecursiveMode::Recursive)?;
+    // Le dossier commun contient `git_dir` dans un worktree lié : un seul abonnement suffit.
+    let git_root = if dirs.git_dir.starts_with(&dirs.common_dir) {
+        &dirs.common_dir
+    } else {
+        &dirs.git_dir
+    };
+    if !git_root.starts_with(&dirs.workdir) {
+        watcher.watch(git_root, RecursiveMode::Recursive)?;
     }
     std::thread::spawn(move || {
         while let Ok(first) = rx.recv() {
@@ -250,7 +286,8 @@ pub fn run() {
             commit_details,
             file_diff,
             initial_path,
-            updates_supported
+            updates_supported,
+            worktree_dirty
         ])
         .run(tauri::generate_context!())
         .expect("failed to start Ramure");
@@ -271,6 +308,20 @@ fn initial_path() -> Option<String> {
         .then(|| candidate.display().to_string())
 }
 
+/// Modifications non commitées dans chacun de ces worktrees (`None` : illisible ou disparu).
+/// Demandé à part, après l'ouverture, pour ne pas ralentir le chargement du graph.
+#[tauri::command]
+async fn worktree_dirty(paths: Vec<String>) -> Vec<Option<bool>> {
+    std::thread::scope(|s| {
+        let jobs: Vec<_> = paths
+            .iter()
+            .take(32)
+            .map(|p| s.spawn(move || gitcli::is_dirty(Path::new(p)).ok()))
+            .collect();
+        jobs.into_iter().map(|j| j.join().ok().flatten()).collect()
+    })
+}
+
 /// Le front ne vérifie les mises à jour que si cette build sait s'installer elle-même :
 /// - pas dans une build de gestionnaire de paquets (compilée avec `RAMURE_NO_UPDATER=1`) ;
 /// - sous Linux, seulement depuis un AppImage (`.deb` et `.rpm` suivent leur gestionnaire) ;
@@ -284,4 +335,56 @@ fn updates_supported() -> bool {
         return false;
     }
     !cfg!(debug_assertions) || std::env::var("RAMURE_UPDATER").is_ok_and(|v| v == "1")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn main_repo() -> GitDirs {
+        GitDirs {
+            workdir: "/r".into(),
+            git_dir: "/r/.git".into(),
+            common_dir: "/r/.git".into(),
+        }
+    }
+    fn linked() -> GitDirs {
+        GitDirs {
+            workdir: "/wt".into(),
+            git_dir: "/r/.git/worktrees/wt".into(),
+            common_dir: "/r/.git".into(),
+        }
+    }
+    fn c(path: &str, d: &GitDirs) -> Option<Change> {
+        classify(Path::new(path), d)
+    }
+
+    #[test]
+    fn depot_principal() {
+        let d = main_repo();
+        assert!(c("/r/.git/refs/heads/main", &d) == Some(Change::Refs));
+        assert!(c("/r/.git/HEAD", &d) == Some(Change::Refs));
+        assert!(c("/r/.git/index", &d) == Some(Change::Refs));
+        assert!(c("/r/.git/objects/ab/cdef", &d).is_none());
+        assert!(c("/r/.git/refs/heads/main.lock", &d).is_none());
+        assert!(c("/r/src/main.rs", &d) == Some(Change::Worktree));
+        // Autres worktrees : leur HEAD compte, pas leur index.
+        assert!(c("/r/.git/worktrees/wt/HEAD", &d) == Some(Change::Refs));
+        assert!(c("/r/.git/worktrees/wt/index", &d).is_none());
+    }
+
+    #[test]
+    fn worktree_lie_voit_les_refs_du_dossier_commun() {
+        let d = linked();
+        assert!(c("/r/.git/refs/heads/main", &d) == Some(Change::Refs));
+        assert!(c("/r/.git/packed-refs", &d) == Some(Change::Refs));
+        assert!(c("/r/.git/objects/ab/cdef", &d).is_none());
+        // Son propre dossier git : HEAD et index.
+        assert!(c("/r/.git/worktrees/wt/HEAD", &d) == Some(Change::Refs));
+        assert!(c("/r/.git/worktrees/wt/index", &d) == Some(Change::Refs));
+        // Les autres worktrees : seulement leur HEAD.
+        assert!(c("/r/.git/worktrees/other/HEAD", &d) == Some(Change::Refs));
+        assert!(c("/r/.git/worktrees/other/index", &d).is_none());
+        assert!(c("/wt/src/main.rs", &d) == Some(Change::Worktree));
+    }
 }

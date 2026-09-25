@@ -137,7 +137,7 @@ Identifiants stables `F-xx` à référencer dans les issues et PR.
 | F-03 | S | Onglets : plusieurs dépôts dans une fenêtre. |
 | F-08 | S | **Espaces de travail.** Un ou plusieurs dossiers racines (ex. `~/code`, `~/clients`) servent de contextes, sauvegardés automatiquement, chacun supprimable (les dépôts ne sont jamais touchés). Panneau latéral repliable (⌘⇧E) : choix du dossier racine actif ; **dépôts récents du contexte** avec la date d'ouverture et un raccourci ⌘1…⌘9 ; **arbre des dépôts** trouvés sous la racine, élagué (seuls les chemins qui mènent à un dépôt), avec les dossiers qui ne contiennent qu'un sous-dossier fusionnés en une ligne (`clients / acme / apps`, comme les « compact folders » de VS Code), branche courante de chaque dépôt, filtre flou. Le scan ne descend pas dans un dépôt ni dans les dossiers lourds (`node_modules`, `target`…) et s'arrête à 6 niveaux et 2 000 dépôts. Un dépôt ouvert hors de toute racine est gardé dans « hors espace » et rejoint le contexte si on ajoute sa racine plus tard. |
 | F-04 | M | Rafraîchissement automatique (watcher sur `.git/` et l'arbre de travail, debounce). Aucun bouton « Refresh ». |
-| F-06 | C | Worktrees : lister, ouvrir dans un onglet. |
+| F-06 | S | **Worktrees** (planche N). Lecture : section *Worktrees* de la barre latérale (dossier, branche, état *modifié* / *verrouillé* / *introuvable*), clic pour ouvrir ; dans le panneau des espaces, icône de worktree et « Worktree de <dépôt> » en infobulle (regroupement sous le dépôt principal : plus tard) ; toute branche extraite dans un autre worktree porte le nom de ce worktree (pastille et barre latérale) ; le watcher suit aussi le dossier git commun (refs partagées), pour voir les commits faits depuis un autre worktree. Commandes : `git worktree add <dossier> <branche>` (ou `-b` pour une nouvelle branche) depuis le menu d'une branche ou en la glissant sur la section, `remove`, `lock` / `unlock`, `prune`, avec annulation ; au niveau 1, onglet du terminal ouvert dans le dossier. Garde : pas de `switch`, `rebase` ni `reset` d'une branche extraite ailleurs (la fiche propose d'ouvrir ce worktree), y compris dans une pile `--update-refs`. |
 | F-07 | C | Sous-modules : état. |
 
 ### 3.2 Commit graph (cœur du produit)
@@ -164,7 +164,7 @@ Les règles de mise en page et leurs justifications sont dans [`ux-graph.md`](./
 | F-25 | C | Replier une branche mergée en une ligne (« 12 commits de fix/pwa-cache ») (D7). |
 | F-26 | M | Formes distinctes par type de nœud et de pastille, sans dépendre de la couleur (D8). |
 
-**Barre latérale** (M) : *Branches locales · Remotes · Tags · Stashes* (*Worktrees* en C),
+**Barre latérale** (M) : *Branches locales · Remotes · Tags · Stashes* (*Worktrees* en S, F-06),
 repliables, avec filtre texte. Clic = aller au commit.
 
 ### 3.3 Recherche instantanée
@@ -561,6 +561,9 @@ La v0.2 ajoute les espaces de travail (F-08) et une première palette ⌘K.
 - Fait le 25 septembre 2026 : extraction dans `Creatiwity/ramure` (historique conservé), licences,
   CI et pipeline de release avec signature et notarisation macOS (`docs/PACKAGING.md`).
 - Fait : mises à jour automatiques (plugin updater de Tauri, §4.3, planche M).
+- Fait : worktrees en lecture (F-06, planche N) : section de la barre latérale, branches extraites
+  ailleurs marquées, ouverture, watcher sur le dossier git commun. Reste : commandes et gardes
+  (phase 2), regroupement dans le panneau des espaces.
 - Écarts assumés par rapport à la spec :
   - diff affiché par un rendu maison (numéros de ligne, ajouts, suppressions) ; CodeMirror 6
     et la coloration syntaxique restent à faire ;
@@ -573,9 +576,9 @@ La v0.2 ajoute les espaces de travail (F-08) et une première palette ⌘K.
 |-------|------------------|---------|--------|
 | **0 — Spike** | 1–2 sem. | `gix` + lanes + rendu canvas virtualisé sur 1 M commits ; prototype de la mise en page refs · graph · texte ; mesure `nucleo`. | Go/no-go perf + test utilisateur rapide (`ux-graph.md` §5) |
 | **1 — Viewer** | 3–4 sem. | F-01..04, F-10..17, F-26, F-30..32, F-36, palette, F-40..42, F-45, F-50, barre latérale, thèmes. Extraction en dépôt public. | Utilisable en viewer à côté du terminal |
-| **2 — Commandes** | 3–4 sem. | F-60..66, F-70..75, F-77, menus contextuels, drag & drop de base, F-94. | **Remplace GitKraken** pour la majorité des gestes |
+| **2 — Commandes** | 3–4 sem. | F-60..66, F-70..75, F-77, menus contextuels, drag & drop de base, F-94, commandes et gardes des worktrees (F-06). | **Remplace GitKraken** pour la majorité des gestes |
 | **3 — V1** | 5 sem. | F-80..83 (`--onto`, piles), F-90..93 (rebase interactif), niveau 1 du terminal (F-101..106, F-108..109) : terminal par défaut du système d'abord, puis tmux, WezTerm, kitty, iTerm2, F-18..24, F-33..34, F-43..44, F-51, F-67..68, onglets, updater, EN. | **Résiliation GitKraken**, release publique 1.0 |
-| **4 — Ensuite** | continu | F-25, F-35, F-46, F-107, worktrees, sous-modules, intégrations terminal supplémentaires (Konsole, Ghostty…). | — |
+| **4 — Ensuite** | continu | F-25, F-35, F-46, F-107, sous-modules, intégrations terminal supplémentaires (Konsole, Ghostty…). | — |
 
 ---
 

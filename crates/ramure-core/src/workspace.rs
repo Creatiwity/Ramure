@@ -64,6 +64,9 @@ pub struct TreeNode {
     pub kind: NodeKind,
     /// Branche courante d'un dépôt (`None` si HEAD détaché ou illisible).
     pub branch: Option<String>,
+    /// Worktree lié : nom du dépôt principal auquel il appartient.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub worktree_of: Option<String>,
     pub children: Vec<TreeNode>,
 }
 
@@ -136,6 +139,7 @@ fn walk(dir: &Path, depth: usize, opts: ScanOptions, count: &mut usize, truncate
                     path: path.display().to_string(),
                     kind: NodeKind::Dir,
                     branch: None,
+                    worktree_of: None,
                     children,
                 });
             }
@@ -153,6 +157,7 @@ fn compact(mut node: TreeNode) -> TreeNode {
             path: child.path,
             kind: NodeKind::Dir,
             branch: None,
+            worktree_of: None,
             children: child.children,
         };
     }
@@ -177,8 +182,24 @@ fn repo_node(path: &Path, name: String) -> TreeNode {
         path: path.display().to_string(),
         kind: NodeKind::Repo,
         branch: current_branch(path),
+        worktree_of: worktree_of(path),
         children: Vec::new(),
     }
+}
+
+/// Dépôt principal d'un worktree lié : son `.git` est un fichier `gitdir: <commun>/worktrees/<nom>`
+/// (un sous-module pointe vers `…/modules/<nom>` et n'est pas concerné).
+pub fn worktree_of(repo: &Path) -> Option<String> {
+    let content = fs::read_to_string(repo.join(".git")).ok()?;
+    let gitdir = PathBuf::from(content.trim().strip_prefix("gitdir:")?.trim());
+    let wt_dir = gitdir.parent()?;
+    if wt_dir.file_name()? != "worktrees" {
+        return None;
+    }
+    let common = wt_dir.parent()?;
+    // `<principal>/.git` : le nom du dossier principal ; un dépôt nu (`demo.git`) : son nom.
+    let main = if common.file_name()? == ".git" { common.parent()? } else { common };
+    Some(name_of(main))
 }
 
 /// Branche courante lue directement dans `HEAD` (sans lancer git : le scan doit rester rapide).
@@ -434,6 +455,14 @@ mod tests {
         fs::create_dir_all(t.path().join("wt")).unwrap();
         fs::write(t.path().join("wt/.git"), format!("gitdir: {}\n", gd.display())).unwrap();
         assert_eq!(current_branch(&t.path().join("wt")).as_deref(), Some("feat/x"));
+        assert_eq!(worktree_of(&t.path().join("wt")).as_deref(), Some("main-repo"));
+        // Sous-module : `.git` pointe vers `modules/`, ce n'est pas un worktree.
+        let md = t.path().join("main-repo/.git/modules/sub");
+        fs::create_dir_all(&md).unwrap();
+        fs::create_dir_all(t.path().join("sub")).unwrap();
+        fs::write(t.path().join("sub/.git"), format!("gitdir: {}\n", md.display())).unwrap();
+        assert_eq!(worktree_of(&t.path().join("sub")), None);
+        assert_eq!(worktree_of(&t.path().join("main-repo")), None);
     }
 
     #[test]

@@ -2,7 +2,7 @@
 
 use serde::Serialize;
 
-use crate::gitcli::{self, CommitDetails, FileChange, Identity, WorkStatus};
+use crate::gitcli::{self, CommitDetails, FileChange, Identity, WorkStatus, Worktree};
 use crate::graph::Edge;
 use crate::repo::{HeadInfo, Timings};
 use crate::{CommitKind, Error, RefInfo, RefKind, Repo};
@@ -22,6 +22,7 @@ pub struct RepoSummary {
     pub identity: Identity,
     pub timings: Timings,
     pub git_version: Option<String>,
+    pub worktrees: Vec<Worktree>,
 }
 
 #[derive(Serialize)]
@@ -31,6 +32,8 @@ pub struct RowRef {
     pub head: bool,
     /// Distante fusionnée dans cette pastille locale (même commit, même nom).
     pub remote: Option<String>,
+    /// Nom du worktree où cette branche est extraite, si ce n'est pas celui-ci.
+    pub worktree: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -77,6 +80,7 @@ pub fn summary(repo: &Repo) -> RepoSummary {
         identity: repo.identity.clone(),
         timings: repo.timings.clone(),
         git_version: gitcli::version().map(|(a, b)| format!("{a}.{b}")),
+        worktrees: repo.worktrees.clone(),
     }
 }
 
@@ -98,6 +102,12 @@ pub fn rows(repo: &Repo, start: u32, end: u32) -> Vec<Row> {
                             kind: r.kind,
                             head: r.head,
                             remote: r.synced_remote.clone(),
+                            worktree: r.worktree.as_deref().map(|p| {
+                                std::path::Path::new(p)
+                                    .file_name()
+                                    .map(|n| n.to_string_lossy().into_owned())
+                                    .unwrap_or_default()
+                            }),
                         })
                         .collect()
                 })

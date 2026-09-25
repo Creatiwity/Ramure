@@ -392,7 +392,12 @@ function refIcons(ref: RowRef): string[] {
 }
 function refTitle(r: Row): string {
   return sortedRefs(r)
-    .map((x) => (x.remote ? `${x.name} = ${x.remote}` : x.name) + (x.head ? ` (${t("graph.head")})` : ""))
+    .map(
+      (x) =>
+        (x.remote ? `${x.name} = ${x.remote}` : x.name) +
+        (x.head ? ` (${t("graph.head")})` : "") +
+        (x.worktree ? ` · ${t("graph.worktree", { name: x.worktree })}` : ""),
+    )
     .join("\n");
 }
 function pillColor(r: Row): string {
@@ -492,6 +497,7 @@ async function selectRow(row: number) {
                 <span class="pill" :class="{ head: v.top.head, tag: v.top.kind === 'tag' }" :style="{ '--c': v.color }">
                   <Icon v-for="ic in v.icons" :key="ic" :name="ic as any" />
                   <span>{{ middleEllipsis(v.top.name, narrow ? 16 : 22) }}</span>
+                  <span v-if="v.top.worktree" class="wtmark"><Icon name="wt" />{{ narrow ? "" : middleEllipsis(v.top.worktree, 12) }}</span>
                 </span>
               </template>
             </span>
@@ -603,6 +609,15 @@ async function selectRow(row: number) {
 }
 .row > span.gone {
   padding: 0;
+}
+.refs .pill .wtmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 2px;
+  padding-left: 5px;
+  border-left: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  font-weight: 500;
 }
 .refs .pill {
   flex: 0 1 auto;

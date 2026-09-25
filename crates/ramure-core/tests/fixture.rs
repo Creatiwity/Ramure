@@ -194,3 +194,49 @@ fn repository_is_never_modified() {
     let _ = ramure_core::gitcli::wip_files(&r.workdir);
     assert_eq!(before, snapshot(t.path()));
 }
+
+#[test]
+fn worktrees_listed_and_branches_checked_out_elsewhere_marked() {
+    let t = tempfile::tempdir().unwrap();
+    let main = t.path().join("demo");
+    std::fs::create_dir(&main).unwrap();
+    git(&main, &["init", "-q", "-b", "main"]);
+    commit(&main, 1, "chore: initialise");
+    commit(&main, 2, "feat: deux");
+    git(&main, &["worktree", "add", "-q", "../demo-agent", "-b", "feat/agent"]);
+    git(&main, &["worktree", "add", "-q", "--lock", "../demo-hot", "-b", "hotfix"]);
+    std::fs::write(t.path().join("demo-agent/f1.txt"), "modifié\n").unwrap();
+
+    // Depuis le worktree principal.
+    let r = Repo::open(&main).unwrap();
+    assert_eq!(r.worktrees.len(), 3);
+    assert!(r.worktrees[0].main && r.worktrees[0].current);
+    let agent = r.worktrees.iter().find(|w| w.name == "demo-agent").unwrap();
+    assert_eq!(agent.branch.as_deref(), Some("feat/agent"));
+    assert!(!agent.current && !agent.locked);
+    assert!(r.worktrees.iter().find(|w| w.name == "demo-hot").unwrap().locked);
+    let local = |r: &Repo, n: &str| {
+        r.refs
+            .iter()
+            .find(|x| x.kind == RefKind::Local && x.name == n)
+            .unwrap()
+            .worktree
+            .clone()
+    };
+    assert!(local(&r, "feat/agent").unwrap().ends_with("demo-agent"));
+    assert!(local(&r, "hotfix").unwrap().ends_with("demo-hot"));
+    assert_eq!(local(&r, "main"), None, "la branche du worktree ouvert n'est pas « ailleurs »");
+    assert!(ramure_core::gitcli::is_dirty(Path::new(&agent.path)).unwrap());
+    assert!(!ramure_core::gitcli::is_dirty(&main).unwrap());
+
+    // Depuis un worktree lié : main est extraite ailleurs, le dossier git commun est connu.
+    let w = Repo::open(t.path().join("demo-agent")).unwrap();
+    assert!(w.worktrees.iter().find(|x| x.name == "demo-agent").unwrap().current);
+    assert!(local(&w, "main").unwrap().ends_with("demo"));
+    assert_eq!(local(&w, "feat/agent"), None);
+    // Chemins déjà normalisés (le watcher les compare aux chemins des événements).
+    assert_eq!(w.common_dir, main.join(".git").canonicalize().unwrap());
+    assert!(w.git_dir.starts_with(&w.common_dir) && w.git_dir != w.common_dir);
+    assert_eq!(r.git_dir, r.common_dir);
+    assert_eq!(w.head.branch.as_deref(), Some("feat/agent"));
+}

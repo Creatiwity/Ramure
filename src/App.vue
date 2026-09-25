@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from "vue";
 import { api, inTauri, type FileChange, type RepoSummary, type ScanResult, type TreeNode, type WorkStatus, type WorkspaceStore } from "./api";
 import { useI18n } from "vue-i18n";
 import { ago, basename, formatNumber, relativeTo, usesConventionalCommits, type Locale } from "./lib/format";
@@ -28,6 +28,15 @@ const langName = (l: Locale) => t(`lang.${l}`);
 const summary = shallowRef<RepoSummary | null>(null);
 const revision = ref(0);
 const selected = ref<number | null>(null);
+/** Sha du commit sélectionné, lu au moment de la sélection : après un rechargement, les numéros
+ *  de ligne ont bougé, il faut retrouver le commit par son sha. */
+let selectedId: string | undefined;
+watch(selected, async (row) => {
+  selectedId = undefined;
+  if (row == null) return;
+  const id = (await api.rows(row, row + 1).catch(() => []))[0]?.id;
+  if (selected.value === row) selectedId = id || undefined;
+});
 const opening = ref(false);
 const error = ref<string | null>(null);
 /** Code de la dernière erreur du cœur (`not_found`, `open`…), pour réagir sans lire le texte. */
@@ -60,6 +69,15 @@ const searchInfo = ref<{ total: number; ms: number } | null>(null);
 const searchInput = ref<HTMLInputElement>();
 const graph = ref<InstanceType<typeof GraphView>>();
 const diffFile = ref<FileChange | null>(null);
+/** Worktrees modifiés (hors celui ouvert), lus après le chargement pour ne pas le ralentir. */
+const wtDirty = shallowRef<Record<string, boolean | null>>({});
+async function refreshWorktrees(s: RepoSummary) {
+  const others = (s.worktrees ?? []).filter((w) => !w.current && !w.prunable);
+  if (!others.length) return void (wtDirty.value = {});
+  const res = await api.worktreeDirty(others.map((w) => w.path)).catch(() => others.map(() => null));
+  if (summary.value?.path !== s.path) return;
+  wtDirty.value = Object.fromEntries(others.map((w, i) => [w.path, res[i] ?? null]));
+}
 
 function load(k: string): string | null {
   try {
@@ -113,6 +131,7 @@ async function open(path: string) {
   try {
     const s = await api.openRepo(path);
     summary.value = s;
+    refreshWorktrees(s);
     revision.value++;
     selected.value = s.head.row ?? (s.rows ? 0 : null);
     resetSearch();
@@ -228,12 +247,17 @@ const paletteItems = computed<PaletteItem[]>(() => {
     const kind = t(r.kind === "local" ? "palette.refLocal" : r.kind === "remote" ? "palette.refRemote" : r.kind === "tag" ? "palette.refTag" : "palette.refStash");
     items.push({ id: `ref:${r.full}`, group: t("palette.groupRefs"), label: r.name, detail: r.head ? `${kind} · HEAD` : kind, icon: r.kind === "tag" ? "tag" : r.kind === "remote" ? "cloud" : r.kind === "stash" ? "box" : "branch", run: () => gotoRow(r.row) });
   }
-  // 4. Autres contextes.
+  // 4. Autres worktrees du dépôt ouvert.
+  for (const w of summary.value?.worktrees ?? []) {
+    if (w.current || w.prunable || (summary.value?.worktrees?.length ?? 0) < 2) continue;
+    items.push({ id: `wt:${w.path}`, group: t("palette.groupWorktrees"), label: `${w.name} · ${w.branch ?? t("sidebar.wtDetached")}`, detail: w.path, search: `${w.name} ${w.branch ?? ""}`, icon: "wt", run: () => openRepo(w.path) });
+  }
+  // 5. Autres contextes.
   for (const root of ws.value.roots) {
     if (root.path === activeRoot) continue;
     items.push({ id: `ctx:${root.path}`, group: t("palette.groupContexts"), label: t("palette.switchTo", { name: basename(root.path) }), detail: root.path, search: t("palette.switchSearch", { name: basename(root.path) }), icon: "folder", run: () => activateRoot(root.path) });
   }
-  // 5. Actions.
+  // 6. Actions.
   const actions: [string, string, string | undefined, () => void][] = [
     [t("palette.actOpen"), "folder", `${modKey}O`, pickFolder],
     [t("palette.actAddRoot"), "plus", undefined, addRoot],
@@ -392,8 +416,9 @@ onMounted(async () => {
     unlisten.push(
       await listen<RepoSummary>("repo-changed", async (ev) => {
         // Conserver la sélection sur le même commit après un rechargement.
-        const keepId = selected.value != null ? (await api.rows(selected.value, selected.value + 1).catch(() => []))[0]?.id : undefined;
+        const keepId = selectedId;
         summary.value = ev.payload;
+        refreshWorktrees(ev.payload);
         revision.value++;
         if (query.value) runSearch();
         if (keepId) {
@@ -510,7 +535,7 @@ const statusText = computed(() => {
       @collapse="togglePanel"
     />
     <main v-if="summary" class="body">
-      <Sidebar :summary="summary" @goto="gotoRow" />
+      <Sidebar :summary="summary" :dirty="wtDirty" @goto="gotoRow" @open="openRepo" />
       <div class="center">
         <GraphView
           ref="graph"
