@@ -38,11 +38,22 @@
     "shortDescription": "Viewer git centré sur le commit graph",
     "publisher": "Creatiwity",
     "copyright": "© 2026 Creatiwity — MIT OR Apache-2.0",
-    "homepage": "https://github.com/Creatiwity/ramure",
+    "homepage": "https://github.com/Creatiwity/Ramure",
     "license": "MIT OR Apache-2.0",
     "macOS": {
       "minimumSystemVersion": "12.0",
       "hardenedRuntime": true
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNEMjVGQzI1QUJCOUMyNUUKUldSZXdybXJKZndsUFg5RUgzNjRLMEJoZlVnZzQvNjVDQnU3a2hyRzczeDdPWFViaUFYWFExNXEK",
+      "endpoints": [
+        "https://github.com/Creatiwity/Ramure/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

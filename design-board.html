@@ -219,6 +219,15 @@ mark{background:var(--mark);color:var(--mark-ink);border-radius:2px;padding:0 1p
 .banner .st{font-weight:600;display:flex;align-items:center;gap:7px;color:var(--warn)}
 .banner .st + span{color:var(--ink-2)}
 .banner .sp{margin-left:auto;display:flex;gap:6px}
+.banner.upd{background:color-mix(in srgb,var(--accent) 10%,var(--app-panel));border-bottom-color:color-mix(in srgb,var(--accent) 35%,transparent)}
+.banner.upd .st{color:var(--accent)}
+.banner.upd .sp{flex-wrap:wrap;justify-content:flex-end}
+.banner.upd.ko{background:var(--warn-bg);border-bottom-color:color-mix(in srgb,var(--warn) 40%,transparent)}
+.banner.upd.ko .st{color:var(--warn)}
+.dlbar{flex:1 1 160px;max-width:240px;height:5px;border-radius:3px;background:color-mix(in srgb,var(--accent) 22%,transparent);overflow:hidden}
+.dlbar i{display:block;height:100%;width:36%;background:var(--accent);border-radius:3px}
+.upd-note{padding:14px 14px 16px;color:var(--ink-3);font-size:12px;display:flex;flex-direction:column;gap:6px}
+.upd-note .ln{height:8px;border-radius:4px;background:var(--app-line)}
 .progress{display:flex;gap:3px}
 .progress i{width:14px;height:4px;border-radius:2px;background:color-mix(in srgb,var(--warn) 30%,transparent)}
 .progress i.on{background:var(--warn)}
@@ -489,7 +498,7 @@ body.alt .althint .on{display:inline}
     <div><h3>Le graph est l'écran</h3><p>Refs, graph, messages : trois lectures séparées, messages tous alignés.</p></div>
     <div><h3>Dire ce qui va se passer</h3><p>Chaque geste aboutit à une commande expliquée, avec l'aperçu du résultat.</p></div>
     <div><h3>Toujours une sortie</h3><p>Chaque commande est livrée avec sa commande d'annulation, en sha explicites.</p></div>
-    <div><h3>Git natif, rien d'autre</h3><p>Pas de service externe, pas de réseau, pas de profil : on lit la config git.</p></div>
+    <div><h3>Git natif, rien d'autre</h3><p>Pas de service externe, pas de profil : on lit la config git. Seul accès réseau : la vérification de mise à jour, désactivable.</p></div>
   </div>
 </header>
 
@@ -986,6 +995,57 @@ body.alt .althint .on{display:inline}
   </div>
 </section>
 
+<!-- M: updates -->
+<section class="plate" id="maj">
+  <div class="plate-head">
+    <div class="t"><span class="letter">M</span><h2>Mise à jour de Ramure</h2></div>
+    <p>Seule requête réseau de l'application : au démarrage puis toutes les 24 h, Ramure lit le manifeste de la dernière release GitHub. Rien n'est téléchargé sans clic. Désactivable, et absente des builds des gestionnaires de paquets.</p>
+  </div>
+  <div class="grid2">
+    <div class="stack">
+      <div class="win">
+        <div class="tb"><div class="lights"><i></i><i></i><i></i></div><div class="crumb"><svg class="i"><use href="#i-folder"/></svg>sherpa</div></div>
+        <div class="banner upd" role="status">
+          <span class="st"><svg class="i"><use href="#i-down"/></svg>Ramure 0.3.0 est disponible</span>
+          <span>vous avez la 0.2.0 · <u>notes de version</u></span>
+          <span class="sp"><span class="b quiet">Ignorer cette version</span><span class="b quiet">Plus tard</span><span class="b primary">Installer et relancer</span></span>
+        </div>
+        <div class="upd-note"><div class="ln" style="width:72%"></div><div class="ln" style="width:58%"></div><div class="ln" style="width:64%"></div></div>
+      </div>
+      <p class="caption">Bandeau sous la barre d'outils, dans la couleur d'accent : il ne masque ni le graph ni la recherche. « Plus tard » le cache jusqu'au prochain démarrage, « Ignorer cette version » jusqu'à la version suivante. Les notes de version (corps de la release) s'ouvrent dans une fiche.</p>
+      <div class="win">
+        <div class="banner upd" role="status">
+          <span class="st"><svg class="i"><use href="#i-down"/></svg>Téléchargement de Ramure 0.3.0</span>
+          <span class="dlbar"><i></i></span>
+          <span style="color:var(--ink-2)">4,2 / 11,8 Mo</span>
+        </div>
+        <div class="banner upd" role="status">
+          <span class="st"><svg class="i"><use href="#i-refresh"/></svg>Installation…</span>
+          <span>Ramure va se relancer et rouvrir ce dépôt.</span>
+        </div>
+        <div class="banner upd ko" role="alert">
+          <span class="st"><svg class="i"><use href="#i-warn"/></svg>La mise à jour a échoué</span>
+          <span>signature invalide : rien n'a été installé.</span>
+          <span class="sp"><span class="b quiet">Fermer</span><span class="b">Réessayer</span></span>
+        </div>
+      </div>
+      <p class="caption">Pendant le téléchargement, la progression remplace les boutons. Chaque archive est vérifiée avec la clé publique embarquée avant installation : une signature invalide n'installe rien.</p>
+    </div>
+    <div class="stack">
+      <div class="palette" style="max-width:none">
+        <div class="in"><svg class="i" style="width:16px;height:16px;color:var(--ink-3)"><use href="#i-search"/></svg><span>mise à<span class="caret" style="display:inline-block;width:1px;height:16px;background:var(--accent);vertical-align:-3px"></span></span><span class="scope">Tout</span></div>
+        <div class="res">
+          <div class="mlabel">Actions</div>
+          <div class="mi hot"><svg class="i"><use href="#i-refresh"/></svg><span class="two"><span>Rechercher une <b>mise à</b> jour</span><span class="cmd">dernière vérification : il y a 2 h</span></span><span class="k">↵</span></div>
+          <div class="mi"><svg class="i"><use href="#i-x"/></svg><span class="two"><span>Désactiver la vérification automatique des <b>mises à</b> jour</span><span class="cmd">aucune requête réseau ensuite</span></span></div>
+        </div>
+      </div>
+      <div class="toast"><svg class="i" style="width:15px;height:15px"><use href="#i-check"/></svg><span>Ramure est à jour (0.2.0).</span></div>
+      <p class="caption">Réglages dans la palette ⌘K : vérifier maintenant (confirmation « à jour » dans un toast), activer ou désactiver la vérification automatique. Désactivée, l'application ne fait plus aucune requête réseau, sauf vérification demandée à la main. Linux : seul l'AppImage se met à jour seul ; <span class="mono">.deb</span> et <span class="mono">.rpm</span> passent par le gestionnaire de paquets, l'action n'est pas proposée.</p>
+    </div>
+  </div>
+</section>
+
 <!-- J: tokens -->
 <section class="plate" id="tokens">
   <div class="plate-head">
@@ -1046,7 +1106,7 @@ body.alt .althint .on{display:inline}
   </div>
 </section>
 
-<footer><span>Ramure · planche design v0.5 · septembre 2026 · MIT OR Apache-2.0</span><span>Références : spec-ramure.md (F-xx), ux-graph.md (D1–D8)</span><span>Données d'exemple fictives inspirées du projet sherpa</span></footer>
+<footer><span>Ramure · planche design v0.6 · septembre 2026 · MIT OR Apache-2.0</span><span>Références : spec-ramure.md (F-xx), ux-graph.md (D1–D8)</span><span>Données d'exemple fictives inspirées du projet sherpa</span></footer>
 </div>
 
 <script>

@@ -155,17 +155,40 @@ jobs:
           echo "APPLE_API_KEY_PATH=$key_path" >> "$GITHUB_ENV"
           echo "SIGNED=true" >> "$GITHUB_ENV"
 
+      - name: Clé de signature des mises à jour
+        # Sans elle, Tauri refuse de produire les archives de mise à jour (createUpdaterArtifacts).
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "::error title=Secret manquant::TAURI_SIGNING_PRIVATE_KEY — voir docs/PACKAGING.md §9"
+            exit 1
+          fi
+
       - name: Build Tauri
         id: tauri
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signature minisign des archives de mise à jour (vérifiée par l'app avec la clé
+          # publique de tauri.conf.json). Indépendante des signatures Apple et Windows.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           # Vide en lancement manuel : build seul, installeurs en artefacts du workflow.
           releaseId: ${{ needs.version.outputs.release_id }}
-          uploadUpdaterJson: false
+          # latest.json, lu par les applications installées, est joint à la release.
+          uploadUpdaterJson: true
           uploadWorkflowArtifacts: true
-          args: ${{ matrix.args }}
+          # tauri.release.conf.json active les archives de mise à jour, uniquement ici : les
+          # builds locales n'ont pas besoin de la clé privée.
+          args: ${{ matrix.args }} --config src-tauri/tauri.release.conf.json
+
+      - name: Vérifier la clé des mises à jour
+        # La clé privée du secret doit correspondre à la clé publique embarquée, sinon toutes les
+        # applications installées refuseraient cette mise à jour.
+        run: node scripts/check-updater-key.mjs target
 
       - name: Vérifier la signature et la notarisation (macOS)
         if: runner.os == 'macOS' && env.SIGNED == 'true'

@@ -231,6 +231,8 @@ fn watch(app: AppHandle, workdir: PathBuf, git_dir: PathBuf, generation: u64) ->
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             workspaces,
@@ -247,7 +249,8 @@ pub fn run() {
             find_row,
             commit_details,
             file_diff,
-            initial_path
+            initial_path,
+            updates_supported
         ])
         .run(tauri::generate_context!())
         .expect("failed to start Ramure");
@@ -266,4 +269,19 @@ fn initial_path() -> Option<String> {
         .ancestors()
         .any(|a| a.join(".git").exists())
         .then(|| candidate.display().to_string())
+}
+
+/// Le front ne vérifie les mises à jour que si cette build sait s'installer elle-même :
+/// - pas dans une build de gestionnaire de paquets (compilée avec `RAMURE_NO_UPDATER=1`) ;
+/// - sous Linux, seulement depuis un AppImage (`.deb` et `.rpm` suivent leur gestionnaire) ;
+/// - en développement, seulement si `RAMURE_UPDATER=1` (la version locale n'est pas publiée).
+#[tauri::command]
+fn updates_supported() -> bool {
+    if option_env!("RAMURE_NO_UPDATER").is_some_and(|v| !v.is_empty() && v != "0") {
+        return false;
+    }
+    if cfg!(target_os = "linux") && std::env::var_os("APPIMAGE").is_none() {
+        return false;
+    }
+    !cfg!(debug_assertions) || std::env::var("RAMURE_UPDATER").is_ok_and(|v| v == "1")
 }

@@ -363,7 +363,7 @@ push / pull · renommer · supprimer · copier le nom.
 ### 3.13 Préférences
 
 M : thème, police et taille, format de date, éditeur externe (ouvrir un fichier), niveau
-d'intégration et terminal cible (S), dialecte de shell, préfixe `git -C`, refs relatives ou sha, branches de tronc, langue (FR/EN).
+d'intégration et terminal cible (S), dialecte de shell, préfixe `git -C`, refs relatives ou sha, branches de tronc, langue (FR/EN), vérification automatique des mises à jour.
 S : raccourcis, couleurs des lanes, mode couleur par défaut (focus / arc-en-ciel).
 
 ---
@@ -393,6 +393,15 @@ Wayland). git ≥ 2.38 requis (pour `--update-refs`), vérifié au démarrage.
 
 - **Aucune écriture dans le dépôt**, aucune exécution de commande d'écriture git.
 - **Aucune requête réseau**, hors vérification de mise à jour (désactivable).
+- Mises à jour (planche M) : au démarrage puis toutes les 24 h, lecture du manifeste
+  `latest.json` de la dernière release GitHub publiée ; aucune donnée envoyée hors en-têtes
+  HTTP standard. Téléchargement et installation seulement sur clic (« Installer et relancer »).
+  Chaque archive est signée (minisign) et vérifiée avec la clé publique embarquée avant
+  installation. « Plus tard » masque le bandeau jusqu'au prochain démarrage, « Ignorer cette
+  version » jusqu'à la suivante. Vérification automatique désactivable dans la palette ; la
+  vérification manuelle reste possible. Linux : AppImage seulement (`.deb` et `.rpm` suivent le
+  gestionnaire de paquets). Les builds des gestionnaires de paquets compilent sans updater
+  (`RAMURE_NO_UPDATER=1`).
 - Aucun identifiant manipulé ni stocké.
 - Tauri : capabilities minimales, pas d'accès shell depuis le front, CSP stricte. Processus
   lancés : `git` en lecture (`log`, `cherry`, `merge-base`, `config --show-origin`) quand `gix`
@@ -551,6 +560,7 @@ La v0.2 ajoute les espaces de travail (F-08) et une première palette ⌘K.
   benchmark 1 M commits.
 - Fait le 25 septembre 2026 : extraction dans `Creatiwity/ramure` (historique conservé), licences,
   CI et pipeline de release avec signature et notarisation macOS (`docs/PACKAGING.md`).
+- Fait : mises à jour automatiques (plugin updater de Tauri, §4.3, planche M).
 - Écarts assumés par rapport à la spec :
   - diff affiché par un rendu maison (numéros de ligne, ajouts, suppressions) ; CodeMirror 6
     et la coloration syntaxique restent à faire ;

@@ -11,6 +11,8 @@ import DiffView from "./components/DiffView.vue";
 import Icon from "./components/Icon.vue";
 import WorkspacePanel from "./components/WorkspacePanel.vue";
 import CommandPalette, { type PaletteItem } from "./components/CommandPalette.vue";
+import UpdateBanner from "./components/UpdateBanner.vue";
+import { createUpdater, noBackend, tauriBackend } from "./lib/updates";
 
 const { t, locale } = useI18n();
 const loc = computed(() => locale.value as Locale);
@@ -72,6 +74,22 @@ function save(k: string, v: string) {
   } catch {
     /* stockage indisponible : préférence non mémorisée */
   }
+}
+function remove(k: string) {
+  try {
+    localStorage.removeItem(k);
+  } catch {
+    /* stockage indisponible */
+  }
+}
+// Mises à jour de l'application (spec §4.3, planche M).
+const updater = createUpdater(inTauri ? tauriBackend : noBackend, { get: load, set: (k, v) => (v == null ? remove(k) : save(k, v)) });
+/** Dépôt à rouvrir après la relance qui suit une mise à jour. */
+const K_REOPEN = "ramure.reopen";
+function installUpdate() {
+  updater.install(() => {
+    if (summary.value) save(K_REOPEN, summary.value.path);
+  });
 }
 function applyTheme() {
   if (theme.value) document.documentElement.setAttribute("data-theme", theme.value);
@@ -236,6 +254,26 @@ const paletteItems = computed<PaletteItem[]>(() => {
     actions.splice(3, 0, [t("palette.actHead"), "check", "H", () => gotoRow(headRow)]);
   }
   actions.forEach(([label, icon, hint, run]) => items.push({ id: `act:${label}`, group: t("palette.groupActions"), label, icon, hint, run }));
+  if (updater.supported.value) {
+    const last = updater.lastCheck.value;
+    items.push({
+      id: "act:updates-check",
+      group: t("palette.groupActions"),
+      label: t("updates.actCheck"),
+      detail: last ? t("updates.lastCheck", { when: ago(last, loc.value) }) : t("updates.neverChecked"),
+      icon: "refresh",
+      run: () => updater.check(true),
+    });
+    const on = updater.auto.value;
+    items.push({
+      id: "act:updates-auto",
+      group: t("palette.groupActions"),
+      label: t(on ? "updates.actAutoOff" : "updates.actAutoOn"),
+      detail: t(on ? "updates.actAutoOffDetail" : "updates.actAutoOnDetail"),
+      icon: on ? "x" : "check",
+      run: () => updater.setAuto(!on),
+    });
+  }
   return items;
 });
 
@@ -343,6 +381,7 @@ function onGlobalKey(e: KeyboardEvent) {
 }
 
 const unlisten: (() => void)[] = [];
+const updateTimers: ReturnType<typeof setTimeout>[] = [];
 onMounted(async () => {
   applyTheme();
   window.addEventListener("keydown", onGlobalKey);
@@ -374,9 +413,16 @@ onMounted(async () => {
   ws.value = await api.workspaces().catch(() => ws.value);
   rescan();
   const initial = await api.initialPath().catch(() => null);
-  if (initial) open(initial);
+  const reopen = load(K_REOPEN);
+  remove(K_REOPEN);
+  if (initial ?? reopen) open((initial ?? reopen)!);
+  // Première vérification quelques secondes après le démarrage, puis toutes les heures on
+  // regarde si la dernière date de plus de 24 h.
+  await updater.init();
+  updateTimers.push(setTimeout(() => updater.tick(), 5000), setInterval(() => updater.tick(), 3600_000));
 });
 onBeforeUnmount(() => {
+  updateTimers.forEach((id) => clearTimeout(id));
   window.removeEventListener("keydown", onGlobalKey);
   document.removeEventListener("mousedown", onDocDown);
   unlisten.forEach((u) => u());
@@ -444,6 +490,8 @@ const statusText = computed(() => {
         </div>
       </div>
     </header>
+
+    <div class="updslot"><UpdateBanner :updater="updater" :has-repo="!!summary" @install="installUpdate" /></div>
 
     <div class="shell" :class="{ withPanel: panelOpen }">
     <WorkspacePanel
@@ -521,7 +569,7 @@ const statusText = computed(() => {
 .app {
   height: 100%;
   display: grid;
-  grid-template-rows: 44px minmax(0, 1fr) auto;
+  grid-template-rows: 44px auto minmax(0, 1fr) auto;
 }
 .tb {
   display: flex;

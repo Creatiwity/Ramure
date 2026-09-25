@@ -2,7 +2,7 @@
 
 Ce guide explique comment le pipeline de release produit les installeurs, quels secrets il
 attend, comment les obtenir côté Apple (et, à venir, côté Windows : §8) et comment les
-enregistrer dans GitHub.
+enregistrer dans GitHub. Les mises à jour automatiques sont décrites au §9.
 
 ## 1. Ce que fait le pipeline
 
@@ -35,10 +35,16 @@ Deux modes :
 Après le build signé, le workflow vérifie lui-même le résultat : `codesign --verify`, `spctl`
 (Gatekeeper doit répondre *Notarized Developer ID*) et `xcrun stapler validate`.
 
+Chaque build produit aussi les **archives de mise à jour** signées (`.app.tar.gz` pour macOS,
+`.AppImage` pour Linux, `.msi` / `-setup.exe` pour Windows, chacune avec sa signature `.sig`), et
+le workflow joint à la release le manifeste `latest.json` que lisent les applications installées
+(§9).
+
 ## 2. Secrets attendus
 
 Tous les secrets sont rangés dans l'**environnement GitHub `release`** (voir §4). Aucun n'est
-nécessaire pour la CI ni pour un build de test non signé.
+nécessaire pour la CI. Un build de test non signé demande seulement `TAURI_SIGNING_PRIVATE_KEY`
+(et son mot de passe).
 
 | Secret | Obligatoire | Contenu | Exemple de forme |
 |--------|-------------|---------|------------------|
@@ -47,6 +53,8 @@ nécessaire pour la CI ni pour un build de test non signé.
 | `APPLE_API_ISSUER` | oui | *Issuer ID* de l'API App Store Connect (un UUID, affiché en haut de la page des clés). | `69a6de7e-…-…-…-…` |
 | `APPLE_API_KEY` | oui | *Key ID* de la clé API App Store Connect (10 caractères). | `2X9R4HXF34` |
 | `APPLE_API_KEY_P8` | oui | Le **contenu complet** du fichier `AuthKey_<KeyID>.p8`, lignes `-----BEGIN PRIVATE KEY-----` et `-----END PRIVATE KEY-----` comprises. | `-----BEGIN PRIVATE KEY-----`… |
+| `TAURI_SIGNING_PRIVATE_KEY` | oui | Clé **privée** de signature des mises à jour, générée par `npx tauri signer generate` (contenu du fichier, sur une ligne). Voir §9. | `dW50cnVzdGVkIGNvbW1lbnQ6…` |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | si la clé en a un | Mot de passe choisi à la génération de la clé. | — |
 | `APPLE_SIGNING_IDENTITY` | non (recommandé : ne pas le créer) | Nom exact de l'identité de signature, sans guillemets (pas l'empreinte hexadécimale, ignorée par le pipeline). Si absent, Tauri prend celle du certificat ; si présent, il vérifie qu'elle correspond. | `Developer ID Application: Creatiwity (ABCDE12345)` |
 
 `GITHUB_TOKEN` est fourni automatiquement par GitHub : rien à faire.
@@ -134,7 +142,8 @@ gh secret set APPLE_CERTIFICATE_PASSWORD --env release --repo $REPO   # saisie m
 gh secret set APPLE_API_ISSUER           --env release --repo $REPO --body "69a6de7e-…"
 gh secret set APPLE_API_KEY              --env release --repo $REPO --body "2X9R4HXF34"
 gh secret set APPLE_API_KEY_P8           --env release --repo $REPO < AuthKey_2X9R4HXF34.p8
-gh secret set APPLE_SIGNING_IDENTITY     --env release --repo $REPO --body "Developer ID Application: Creatiwity (ABCDE12345)"   # facultatif
+gh secret set TAURI_SIGNING_PRIVATE_KEY          --env release --repo $REPO < ~/.tauri/ramure.key
+gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD --env release --repo $REPO   # saisie masquée
 
 gh secret list --env release --repo $REPO   # vérifier la présence (les valeurs ne sont jamais affichées)
 ```
@@ -166,7 +175,8 @@ gh secret list --env release --repo $REPO   # vérifier la présence (les valeur
 
 3. Valider le déploiement dans l'onglet *Actions* si des relecteurs sont requis.
 4. À la fin, ouvrir la release **brouillon** créée par le workflow, relire les notes, vérifier les
-   installeurs, puis **Publish release**.
+   installeurs, puis **Publish release**. C'est la publication qui déclenche les mises à jour :
+   le corps de la release devient les notes affichées dans l'application (§9).
 
 Un tag avec un tiret (`v0.3.0-beta.1`) crée une pré-release.
 
@@ -192,6 +202,10 @@ xcrun stapler validate /Applications/Ramure.app     # The validate action worked
 | Notarisation « Invalid » | Voir le journal Apple : `xcrun notarytool log <submission-id> --key AuthKey_….p8 --key-id … --issuer …`. |
 | `spctl` : « rejected » | Application signée mais pas notarisée, ou certificat de type *Apple Development* au lieu de *Developer ID Application*. |
 | Certificat expiré (au bout de 5 ans) | En créer un nouveau (§3.1) et mettre à jour `APPLE_CERTIFICATE` et `APPLE_CERTIFICATE_PASSWORD`. |
+| « A public key has been found, but no private key » au build | `TAURI_SIGNING_PRIVATE_KEY` absent ou vide dans l'environnement `release`. |
+| « incorrect updater private key password » | Mauvais `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. |
+| L'application signale « signature » à l'installation d'une mise à jour | La clé privée du secret ne correspond pas à la clé publique de `tauri.conf.json` : regénérer l'une à partir de l'autre est impossible, remettre la bonne paire (§9.1). |
+| Aucune mise à jour proposée | Release encore en brouillon ou marquée pré-release, `latest.json` absent de la release, ou vérification automatique désactivée (⌘K). |
 
 ## 8. Signer pour Windows
 
@@ -325,11 +339,71 @@ Sous Windows : clic droit sur le `.msi` → *Propriétés → Signatures numéri
 Get-AuthenticodeSignature .\Ramure_0.2.0_x64_en-US.msi | Format-List Status, SignerCertificate
 ```
 
-## 9. Pas encore couvert
+## 9. Mises à jour automatiques
+
+Ramure utilise le plugin updater de Tauri (spec §4.3, planche M). Au démarrage puis toutes les
+24 h, l'application lit :
+
+```
+https://github.com/Creatiwity/Ramure/releases/latest/download/latest.json
+```
+
+Ce manifeste, produit par le workflow, donne la dernière version et, pour chaque plateforme, l'URL
+de l'archive et sa signature. L'application propose la mise à jour dans un bandeau ; au clic, elle
+télécharge l'archive, **vérifie sa signature avec la clé publique** inscrite dans
+`src-tauri/tauri.conf.json` (`plugins.updater.pubkey`), installe puis se relance.
+
+### 9.1 La paire de clés
+
+C'est une signature minisign propre à Tauri, indépendante des certificats Apple et Windows.
+
+```bash
+npx tauri signer generate -w ~/.tauri/ramure.key   # demande un mot de passe
+```
+
+- `ramure.key` (privée) va dans le secret `TAURI_SIGNING_PRIVATE_KEY`, son mot de passe dans
+  `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (§4.2).
+- `ramure.key.pub` (publique) va dans `plugins.updater.pubkey` de `tauri.conf.json` : ce n'est pas
+  un secret. Clé actuelle : ID minisign `3D25FC25ABB9C25E`.
+- **Sauvegarder la clé privée et son mot de passe** dans le coffre de l'équipe. Si on les perd,
+  les versions installées refuseront toute mise à jour signée avec une nouvelle clé : chacun
+  devra réinstaller Ramure à la main (la nouvelle version embarquant la nouvelle clé publique).
+- Si la clé privée fuit : générer une nouvelle paire, mettre à jour le secret et la clé publique,
+  publier une version, et prévenir que les versions précédentes doivent être réinstallées.
+
+### 9.2 Ce qui se met à jour
+
+| Plateforme | Archive utilisée | Remarque |
+|------------|------------------|----------|
+| macOS | `Ramure.app.tar.gz` | L'application reste signée et notarisée. |
+| Windows | `.msi` | Installation en mode *passive* (barre de progression, sans questions). |
+| Linux | `.AppImage` | `.deb` et `.rpm` passent par le gestionnaire de paquets : l'application ne propose rien. |
+
+Seules les releases **publiées** comptent : un brouillon ou une pré-release (`v0.3.0-beta.1`)
+n'est pas vu par `releases/latest`.
+
+### 9.3 Builds sans updater
+
+Les archives de mise à jour ne sont produites que par le pipeline (`--config
+src-tauri/tauri.release.conf.json`, qui active `bundle.createUpdaterArtifacts`) : une build locale
+n'a pas besoin de la clé privée. Pour un gestionnaire de paquets (Homebrew, AUR, Flathub…),
+compiler avec `RAMURE_NO_UPDATER=1` : l'application ne fait alors aucune vérification. En
+développement (`npm run tauri dev`), la vérification est coupée, sauf avec `RAMURE_UPDATER=1`.
+
+### 9.4 Tester une mise à jour
+
+1. Publier une version `vX.Y.Z` (§5) et l'installer.
+2. Publier `vX.Y.(Z+1)`.
+3. Relancer l'application installée : le bandeau « Ramure X.Y.(Z+1) est disponible » apparaît
+   après quelques secondes (ou tout de suite via ⌘K → *Rechercher une mise à jour*).
+4. *Installer et relancer* : l'application redémarre dans la nouvelle version et rouvre le dépôt.
+
+La première version qui embarque l'updater doit être installée à la main : les versions
+antérieures ne savent pas se mettre à jour.
+
+## 10. Pas encore couvert
 
 - Signature Windows : procédure décrite au §8, pas encore branchée dans le pipeline.
-- Mises à jour automatiques (plugin updater de Tauri) : demandera une paire de clés
-  `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` et `uploadUpdaterJson`.
 - Notarisation du `.dmg` lui-même : aujourd'hui l'application qu'il contient est notarisée et
   agrafée, ce qui suffit à Gatekeeper ; notariser aussi l'image évite une vérification en ligne à
   l'ouverture du `.dmg`.
