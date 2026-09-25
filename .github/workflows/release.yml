@@ -1,0 +1,189 @@
+name: Release
+
+# Build de Ramure pour macOS (binaire universel, signé et notarisé), Linux et Windows.
+#
+# - Tag `vX.Y.Z` poussé : la signature macOS est obligatoire, une release GitHub est créée en
+#   brouillon (une seule, même si l'on relance) avec tous les installeurs. On la relit puis on
+#   la publie à la main.
+# - Lancement manuel (Actions → Release → Run workflow) : build de test, installeurs
+#   disponibles en artefacts du workflow ; signature macOS si l'option est cochée.
+#
+# Secrets attendus et procédure : docs/PACKAGING.md.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      sign:
+        description: "Signer et notariser la build macOS (secrets Apple requis)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Version et release
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.release.outputs.id }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Versions cohérentes (et égales au tag s'il y en a un)
+        run: node scripts/check-version.mjs ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+      - name: Créer (ou retrouver) la release brouillon
+        # Un seul job crée la release : les trois builds y déposent ensuite leurs installeurs.
+        id: release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          id=$(gh api "repos/${GITHUB_REPOSITORY}/releases" --paginate --jq ".[] | select(.tag_name == \"$TAG\") | .id" | head -1)
+          if [ -z "$id" ]; then
+            prerelease=false
+            case "$TAG" in *-*) prerelease=true ;; esac
+            body=$(printf '%s\n\n%s\n%s\n%s' \
+              "Installeurs de Ramure $TAG." \
+              "- macOS 12 et plus (Apple Silicon et Intel) : \`.dmg\`, signé et notarisé." \
+              "- Linux : \`.AppImage\`, \`.deb\`, \`.rpm\`." \
+              "- Windows 10/11 : \`.msi\` ou \`-setup.exe\` (pas encore signés : SmartScreen affichera un avertissement).")
+            id=$(gh api "repos/${GITHUB_REPOSITORY}/releases" -f tag_name="$TAG" -f name="Ramure $TAG" -f body="$body" -F draft=true -F prerelease=$prerelease --jq .id)
+            echo "Release brouillon créée : $id"
+          else
+            echo "Release existante réutilisée : $id"
+          fi
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.name }}
+    needs: version
+    # Les secrets Apple sont rangés dans l'environnement « release » (voir docs/PACKAGING.md),
+    # qui peut exiger une validation humaine avant chaque build.
+    environment: release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS (universel)
+            platform: macos-latest
+            args: --target universal-apple-darwin
+          - name: Linux
+            platform: ubuntu-22.04
+            args: ""
+          - name: Windows
+            platform: windows-latest
+            args: ""
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Dépendances système de Tauri (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          # Binaire universel macOS : Apple Silicon et Intel.
+          targets: ${{ runner.os == 'macOS' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.platform }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Préparer la signature macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          SIGN_REQUIRED: ${{ startsWith(github.ref, 'refs/tags/') || inputs.sign }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          if [ "$SIGN_REQUIRED" != "true" ]; then
+            echo "::warning title=macOS non signé::Build de test sans signature : macOS bloquera l'ouverture (clic droit → Ouvrir pour passer outre)."
+            echo "SIGNED=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          missing=()
+          for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_API_ISSUER APPLE_API_KEY APPLE_API_KEY_P8; do
+            [ -n "${!name}" ] || missing+=("$name")
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            # Sans ces secrets, Tauri produirait une app non signée ou non notarisée sans échouer.
+            echo "::error title=Secrets Apple manquants::${missing[*]} — voir docs/PACKAGING.md"
+            exit 1
+          fi
+          # Les variables ne sont exportées que si l'on signe : une variable vide ferait échouer
+          # l'import du certificat par Tauri.
+          {
+            echo "APPLE_CERTIFICATE=$(printf '%s' "$APPLE_CERTIFICATE" | tr -d '\r\n ')"
+            echo "APPLE_CERTIFICATE_PASSWORD=$APPLE_CERTIFICATE_PASSWORD"
+            echo "APPLE_API_ISSUER=$APPLE_API_ISSUER"
+            echo "APPLE_API_KEY=$APPLE_API_KEY"
+            [ -n "$APPLE_SIGNING_IDENTITY" ] && echo "APPLE_SIGNING_IDENTITY=$APPLE_SIGNING_IDENTITY"
+          } >> "$GITHUB_ENV"
+          key_path="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY}.p8"
+          printf '%s\n' "$APPLE_API_KEY_P8" > "$key_path"
+          chmod 600 "$key_path"
+          echo "APPLE_API_KEY_PATH=$key_path" >> "$GITHUB_ENV"
+          echo "SIGNED=true" >> "$GITHUB_ENV"
+
+      - name: Build Tauri
+        id: tauri
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Vide en lancement manuel : build seul, installeurs en artefacts du workflow.
+          releaseId: ${{ needs.version.outputs.release_id }}
+          uploadUpdaterJson: false
+          uploadWorkflowArtifacts: true
+          args: ${{ matrix.args }}
+
+      - name: Vérifier la signature et la notarisation (macOS)
+        if: runner.os == 'macOS' && env.SIGNED == 'true'
+        shell: bash
+        run: |
+          app=$(ls -d target/universal-apple-darwin/release/bundle/macos/*.app | head -1)
+          echo "Application : $app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign -dv --verbose=4 "$app" 2>&1 | grep -E "Authority|TeamIdentifier|Runtime"
+          # Gatekeeper doit accepter l'app comme « Notarized Developer ID ».
+          spctl --assess --type execute --verbose=4 "$app"
+          xcrun stapler validate "$app"
+
+      - name: Récapitulatif
+        if: always()
+        shell: bash
+        env:
+          NAME: ${{ matrix.name }}
+          ARTIFACTS: ${{ steps.tauri.outputs.artifactPaths }}
+          RELEASE_URL: ${{ steps.tauri.outputs.releaseHtmlUrl }}
+        run: |
+          {
+            echo "### $NAME"
+            if [ "$RUNNER_OS" = "macOS" ]; then
+              if [ "$SIGNED" = "true" ]; then echo "- Signée (Developer ID) et notarisée"; else echo "- **Non signée** (build de test)"; fi
+            fi
+            echo "- Artefacts : \`$ARTIFACTS\`"
+            if [ -n "$RELEASE_URL" ]; then echo "- Release : $RELEASE_URL"; fi
+          } >> "$GITHUB_STEP_SUMMARY"

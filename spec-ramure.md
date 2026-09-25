@@ -540,7 +540,9 @@ La v0.2 ajoute les espaces de travail (F-08) et une première palette ⌘K.
   raccourcis, sans mode first-parent), F-33 (`author:`, `msg:`, `ref:`, `sha:` ; pas encore
   `before:`, `after:`, `merge:`).
 - Pas encore : F-03 (onglets), F-21, F-23, F-24, F-34, F-35, F-43, F-44, F-51,
-  i18n EN, benchmark 1 M commits, extraction en dépôt public.
+  i18n EN, benchmark 1 M commits.
+- Fait le 25 septembre 2026 : extraction dans `Creatiwity/ramure` (historique conservé), licences,
+  CI et pipeline de release avec signature et notarisation macOS (`docs/PACKAGING.md`).
 - Écarts assumés par rapport à la spec :
   - diff affiché par un rendu maison (numéros de ligne, ajouts, suppressions) ; CodeMirror 6
     et la coloration syntaxique restent à faire ;

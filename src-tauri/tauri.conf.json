@@ -27,8 +27,22 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
     "category": "DeveloperTool",
-    "shortDescription": "Viewer git centré sur le commit graph"
+    "shortDescription": "Viewer git centré sur le commit graph",
+    "publisher": "Creatiwity",
+    "copyright": "© 2026 Creatiwity — MIT OR Apache-2.0",
+    "homepage": "https://github.com/Creatiwity/ramure",
+    "license": "MIT OR Apache-2.0",
+    "macOS": {
+      "minimumSystemVersion": "12.0",
+      "hardenedRuntime": true
+    }
   }
 }

@@ -1,6 +1,8 @@
-# ramure *(nom de code)*
+# Ramure
 
-> Statut : **incubation** — v0.2 (viewer) · spec v0.5 · open source (MIT OR Apache-2.0)
+[![CI](https://github.com/Creatiwity/ramure/actions/workflows/ci.yml/badge.svg)](https://github.com/Creatiwity/ramure/actions/workflows/ci.yml)
+
+> v0.2 (viewer) · spec v0.5 · open source (MIT OR Apache-2.0) · né dans l'incubator Creatiwity
 
 ## Résumé
 
@@ -17,7 +19,6 @@ kitty…), toujours dans le shell de l'utilisateur avec sa config (oh-my-zsh, al
 copier à la place. Aucune intégration de service externe, aucune requête réseau, identités gérées
 par la config git (`includeIf`).
 
-Ce projet a vocation à être extrait dans son propre dépôt public (`Creatiwity/ramure`).
 
 ![Ramure v0.2 : panneau des espaces et graph](docs/v0.2-workspaces.png)
 
@@ -68,7 +69,6 @@ Prérequis : Rust ≥ 1.94, Node ≥ 22, git ≥ 2.38, et les
 `libwebkit2gtk-4.1-dev`, `libgtk-3-dev`, `librsvg2-dev`).
 
 ```bash
-cd ramure
 npm install
 npx tauri dev -- -- /chemin/absolu/vers/un/depot   # application native, rechargement à chaud
 npx tauri build                                    # binaire et installeurs dans target/release/
@@ -88,6 +88,12 @@ npm run sample                                 # exporte public/sample.json
 npm run dev                                    # http://localhost:1420
 ```
 
+## Installeurs et signature
+
+Le workflow `release.yml` produit les installeurs macOS (universel, signé et notarisé), Linux et
+Windows à chaque tag `vX.Y.Z`, dans une release GitHub en brouillon. Secrets attendus, procédure
+Apple et publication : [`docs/PACKAGING.md`](docs/PACKAGING.md).
+
 ## Tests et qualité
 
 ```bash
@@ -102,7 +108,7 @@ Un test vérifie que l'ouverture d'un dépôt ne modifie ni ses refs ni son inde
 Performances : voir [`PERF.md`](./PERF.md) (dépôt synthétique de 100 000 commits généré par
 `fixtures/gen-repo.py`).
 
-## Contenu de ce dossier
+## Contenu du dépôt
 
 - `spec-ramure.md` : cahier des charges (objectifs, fonctionnalités F-xx en MoSCoW, exigences
   de performance, architecture, feuille de route, risques, critères d'acceptation) ; fait foi.
@@ -120,3 +126,9 @@ Performances : voir [`PERF.md`](./PERF.md) (dépôt synthétique de 100 000 comm
   cœur et le backend de démonstration).
 - `fixtures/` : génération du dépôt d'exemple et du dépôt de 100 000 commits.
 - `docs/` : captures d'écran.
+- `.github/workflows/` : CI (`ci.yml`) et release (`release.yml`).
+- `scripts/check-version.mjs` : vérifie que les trois fichiers de version concordent (et avec le tag).
+
+## Licence
+
+Double licence, au choix : [MIT](LICENSE-MIT) ou [Apache 2.0](LICENSE-APACHE).
