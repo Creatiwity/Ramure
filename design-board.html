@@ -462,6 +462,7 @@ body.alt .althint .on{display:inline}
     <symbol id="i-refresh" viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.5-3.5"/><path d="M13 2.5v3h-3"/></symbol>
     <symbol id="i-panel" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M6 2.5v11"/></symbol>
     <symbol id="i-repo" viewBox="0 0 16 16"><path d="M3.5 13V3a1 1 0 0 1 1-1h8v10h-8a1 1 0 0 0-1 1 1 1 0 0 0 1 1h8"/><path d="M6 2v5l1.25-1 1.25 1V2"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5"/><path d="M1.5 8h13M8 1.5c2 2 2.6 4.2 2.6 6.5S10 12.5 8 14.5M8 1.5C6 3.5 5.4 5.7 5.4 8S6 12.5 8 14.5"/></symbol>
   </defs>
 </svg>
 
@@ -511,6 +512,7 @@ body.alt .althint .on{display:inline}
         <div class="tbtn"><svg class="i"><use href="#i-term"/></svg>Commandes <span class="badge">2</span></div>
         <div class="search"><svg class="i"><use href="#i-search"/></svg><span class="q">Rechercher commits, refs, auteurs</span><kbd>⌘F</kbd></div>
         <div class="tbtn" style="min-width:auto"><svg class="i"><use href="#i-cmd"/></svg>⌘K</div>
+        <div class="tbtn" style="min-width:auto" title="Langue : système (français)"><svg class="i"><use href="#i-globe"/></svg>FR</div>
       </div>
       <div class="body3" style="grid-template-columns:200px 1fr 290px">
         <aside class="side">
@@ -1031,6 +1033,15 @@ body.alt .althint .on{display:inline}
       </div>
       <h3>Nœuds</h3>
       <div class="nodes" id="nodes"></div>
+    </div>
+    <div class="stack">
+      <h3>Langue</h3>
+      <div class="menu" style="max-width:260px">
+        <div class="mi hot"><svg class="i"><use href="#i-check"/></svg><span class="two"><span>Système</span><span class="cmd">français (détecté)</span></span></div>
+        <div class="mi"><svg class="i" style="visibility:hidden"><use href="#i-check"/></svg>Français</div>
+        <div class="mi"><svg class="i" style="visibility:hidden"><use href="#i-check"/></svg>English</div>
+      </div>
+      <p class="caption">Bouton globe de la barre d'outils (code de la langue affichée : FR, EN) et palette ⌘K. Par défaut, la langue du système ; toute autre langue que le français bascule en anglais. Dates et nombres suivent la langue choisie (« il y a 3 h » / « 3 hr. ago », « 100 003 » / « 100,003 »).</p>
     </div>
   </div>
 </section>

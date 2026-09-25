@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { api, type Details, type FileChange } from "../api";
-import { fullDate, initials } from "../lib/format";
+import { useI18n } from "vue-i18n";
+import { fullDate, initials, type Locale } from "../lib/format";
+import { errorText } from "../i18n";
 import Icon from "./Icon.vue";
 
 const props = defineProps<{ row: number | null; revision: number }>();
 const emit = defineEmits<{ diff: [file: FileChange]; goto: [sha: string] }>();
 
+const { t, locale } = useI18n();
+const loc = computed(() => locale.value as Locale);
 const details = ref<Details | null>(null);
 const error = ref<string | null>(null);
 const loading = ref(false);
@@ -16,18 +20,18 @@ let token = 0;
 watch(
   () => [props.row, props.revision],
   async () => {
-    const t = ++token;
+    const tk = ++token;
     details.value = null;
     error.value = null;
     if (props.row == null) return;
     loading.value = true;
     try {
       const d = await api.commitDetails(props.row);
-      if (t === token) details.value = d;
+      if (tk === token) details.value = d;
     } catch (e) {
-      if (t === token) error.value = String(e);
+      if (tk === token) error.value = errorText(e);
     } finally {
-      if (t === token) loading.value = false;
+      if (tk === token) loading.value = false;
     }
   },
   { immediate: true },
@@ -42,10 +46,10 @@ const totals = computed(() => {
 const signature = computed(() => {
   if (details.value?.type !== "commit") return null;
   const s = details.value.signature;
-  if (s === "G") return { text: "vérifiée", ok: true };
+  if (s === "G") return { text: t("details.sigGood"), ok: true };
   if (s === "N") return null;
-  if (s === "U") return { text: "valide, confiance inconnue", ok: true };
-  return { text: `non vérifiée (${s})`, ok: false };
+  if (s === "U") return { text: t("details.sigUnknown"), ok: true };
+  return { text: t("details.sigBad", { code: s }), ok: false };
 });
 
 function dir(path: string) {
@@ -68,9 +72,9 @@ async function copy(text: string) {
 
 <template>
   <aside class="details">
-    <div v-if="row == null" class="empty">Sélectionnez un commit pour voir ses détails.</div>
+    <div v-if="row == null" class="empty">{{ t("details.select") }}</div>
     <div v-else-if="error" class="empty err">{{ error }}</div>
-    <div v-else-if="!details" class="empty">{{ loading ? "Chargement…" : "" }}</div>
+    <div v-else-if="!details" class="empty">{{ loading ? t("details.loading") : "" }}</div>
     <template v-else-if="details.type === 'commit'">
       <div class="sec">
         <div class="subj">{{ subject }}</div>
@@ -78,35 +82,35 @@ async function copy(text: string) {
       </div>
       <div class="sec">
         <dl class="kv">
-          <dt>Auteur</dt>
+          <dt>{{ t("details.author") }}</dt>
           <dd><span class="av">{{ initials(details.author) }}</span>{{ details.author }} <span class="muted">{{ details.author_email }}</span></dd>
-          <dt>Date</dt>
-          <dd>{{ fullDate(details.author_time) }}</dd>
+          <dt>{{ t("details.date") }}</dt>
+          <dd>{{ fullDate(details.author_time, loc) }}</dd>
           <template v-if="details.committer !== details.author">
-            <dt>Committer</dt>
+            <dt>{{ t("details.committer") }}</dt>
             <dd>{{ details.committer }}</dd>
           </template>
-          <dt>Commit</dt>
+          <dt>{{ t("details.commit") }}</dt>
           <dd>
             <button class="sha" :title="details.id" @click="copy(details.id)">
-              {{ details.id.slice(0, 10) }} <Icon name="copy" /><span v-if="copied" class="ok">copié</span>
+              {{ details.id.slice(0, 10) }} <Icon name="copy" /><span v-if="copied" class="ok">{{ t("details.copied") }}</span>
             </button>
           </dd>
-          <dt>{{ details.parents.length > 1 ? "Parents" : "Parent" }}</dt>
+          <dt>{{ t("details.parent", details.parents.length) }}</dt>
           <dd>
-            <span v-if="!details.parents.length" class="muted">aucun (commit racine)</span>
+            <span v-if="!details.parents.length" class="muted">{{ t("details.root") }}</span>
             <button v-for="p in details.parents" :key="p" class="sha link" @click="emit('goto', p)">{{ p.slice(0, 10) }}</button>
           </dd>
           <template v-if="signature">
-            <dt>Signature</dt>
+            <dt>{{ t("details.signature") }}</dt>
             <dd :class="signature.ok ? 'good' : 'bad'">{{ signature.text }}</dd>
           </template>
         </dl>
       </div>
       <div class="sec files-head">
-        <span class="eyebrow">{{ totals.n }} fichier{{ totals.n > 1 ? "s" : "" }}</span>
+        <span class="eyebrow">{{ t("details.files", totals.n) }}</span>
         <span class="num"><span class="a">+{{ totals.add }}</span> <span class="d">−{{ totals.del }}</span></span>
-        <span v-if="details.parents.length > 1" class="muted">par rapport au premier parent</span>
+        <span v-if="details.parents.length > 1" class="muted">{{ t("details.vsFirstParent") }}</span>
       </div>
       <div class="files">
         <button v-for="f in details.files" :key="f.path" class="file" @click="emit('diff', f)">
@@ -118,20 +122,20 @@ async function copy(text: string) {
     </template>
     <template v-else>
       <div class="sec">
-        <div class="subj">Changements non commités</div>
+        <div class="subj">{{ t("details.wipTitle") }}</div>
         <div class="body">
-          Lecture seule : l'indexation et le commit se font dans votre IDE ou votre terminal.
-          <span v-if="details.status.operation"><br />Opération en cours : <b>{{ details.status.operation }}</b>.</span>
+          {{ t("details.wipReadOnly") }}
+          <span v-if="details.status.operation"><br />{{ t("details.wipOperation", { op: details.status.operation }) }}</span>
         </div>
       </div>
       <div class="sec files-head">
-        <span class="eyebrow">{{ details.files.length }} fichier{{ details.files.length > 1 ? "s" : "" }}</span>
+        <span class="eyebrow">{{ t("details.files", details.files.length) }}</span>
       </div>
       <div class="files">
         <button v-for="f in details.files" :key="f.path" class="file" @click="emit('diff', f)">
           <span class="st" :class="f.status === '?' ? 'A' : f.status">{{ f.status === "?" ? "N" : f.status }}</span>
           <span class="p" :title="f.path"><i>{{ dir(f.path) }}</i>{{ base(f.path) }}</span>
-          <span class="num muted">{{ f.status === "?" ? "non suivi" : "" }}</span>
+          <span class="num muted">{{ f.status === "?" ? t("details.untracked") : "" }}</span>
         </button>
       </div>
     </template>

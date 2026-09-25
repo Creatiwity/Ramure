@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { api, type FileChange } from "../api";
+import { useI18n } from "vue-i18n";
+import { errorText } from "../i18n";
 import Icon from "./Icon.vue";
 
 const props = defineProps<{ row: number; file: FileChange; wip: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 
+const { t } = useI18n();
 const raw = ref("");
 const error = ref<string | null>(null);
 
@@ -17,7 +20,7 @@ watch(
     try {
       raw.value = await api.fileDiff(props.row, props.file.path, props.file.old_path, props.file.status === "?");
     } catch (e) {
-      error.value = String(e);
+      error.value = errorText(e);
     }
   },
   { immediate: true },
@@ -44,11 +47,11 @@ const lines = computed<Line[]>(() => {
       inHunk = true;
       out.push({ kind: "hunk", old: null, new: null, text: m[3].trim() || "…" });
     } else if (!inHunk) {
-      if (l.startsWith("Binary files")) out.push({ kind: "meta", old: null, new: null, text: "Fichier binaire" });
+      if (l.startsWith("Binary files")) out.push({ kind: "meta", old: null, new: null, text: t("diff.binary") });
     } else if (l.startsWith("+")) out.push({ kind: "add", old: null, new: n++, text: l.slice(1) });
     else if (l.startsWith("-")) out.push({ kind: "del", old: o++, new: null, text: l.slice(1) });
     else if (l.startsWith(" ")) out.push({ kind: "ctx", old: o++, new: n++, text: l.slice(1) });
-    else if (l.startsWith("\\")) out.push({ kind: "meta", old: null, new: null, text: "Pas de retour à la ligne en fin de fichier" });
+    else if (l.startsWith("\\")) out.push({ kind: "meta", old: null, new: null, text: t("diff.noNewline") });
   }
   return out;
 });
@@ -65,13 +68,13 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
     <header>
       <Icon name="file" />
       <b class="path">{{ file.path }}</b>
-      <span v-if="file.old_path" class="muted">renommé depuis {{ file.old_path }}</span>
-      <span v-if="wip" class="muted">· non commité</span>
-      <button class="btn quiet close" title="Fermer (Échap)" @click="emit('close')"><Icon name="x" /> Fermer <kbd>Échap</kbd></button>
+      <span v-if="file.old_path" class="muted">{{ t("diff.renamed", { path: file.old_path }) }}</span>
+      <span v-if="wip" class="muted">{{ t("diff.uncommitted") }}</span>
+      <button class="btn quiet close" :title="t('diff.closeTitle')" @click="emit('close')"><Icon name="x" /> {{ t("diff.close") }} <kbd>{{ t("diff.esc") }}</kbd></button>
     </header>
     <div v-if="error" class="msg err">{{ error }}</div>
-    <div v-else-if="!raw" class="msg">Chargement…</div>
-    <div v-else-if="!lines.length" class="msg">Aucune différence textuelle.</div>
+    <div v-else-if="!raw" class="msg">{{ t("diff.loading") }}</div>
+    <div v-else-if="!lines.length" class="msg">{{ t("diff.noDiff") }}</div>
     <div v-else class="code">
       <div v-for="(l, i) in lines" :key="i" class="ln" :class="l.kind">
         <span class="no">{{ l.old ?? "" }}</span><span class="no">{{ l.new ?? "" }}</span

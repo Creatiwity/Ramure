@@ -21,10 +21,7 @@ fn git(repo: &Path) -> Command {
 }
 
 fn run(repo: &Path, args: &[&str]) -> Result<Vec<u8>, Error> {
-    let out = git(repo)
-        .args(args)
-        .output()
-        .map_err(|e| Error::Git(format!("git introuvable : {e}")))?;
+    let out = git(repo).args(args).output().map_err(|e| Error::GitMissing(e.to_string()))?;
     if !out.status.success() {
         return Err(Error::Git(format!(
             "git {} : {}",
@@ -202,7 +199,7 @@ pub fn commit_details(repo: &Path, id: &str) -> Result<CommitDetails, Error> {
     let s = String::from_utf8_lossy(&out);
     let f: Vec<&str> = s.splitn(10, '\x1f').collect();
     if f.len() < 10 {
-        return Err(Error::Git(format!("format inattendu pour {id}")));
+        return Err(Error::Git(format!("unexpected `git show` output for {id}")));
     }
     let parents: Vec<String> = f[1].split_whitespace().map(String::from).collect();
     let files = changed_files(repo, parents.first().map(String::as_str), id)?;

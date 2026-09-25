@@ -7,11 +7,11 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use notify::{RecursiveMode, Watcher};
-use ramure_core::Repo;
 use ramure_core::gitcli;
 use ramure_core::search::SearchResult;
 use ramure_core::view::{self, Details, EdgeDto, RepoSummary, Row};
 use ramure_core::workspace::{self, ScanOptions, ScanResult, Store};
+use ramure_core::{Error, Repo};
 use tauri::{AppHandle, Emitter, Manager, State};
 
 #[derive(Default)]
@@ -25,66 +25,71 @@ struct AppState {
 }
 
 /// Applique une modification au store des espaces, l'enregistre et le renvoie.
-fn with_store(app: &AppHandle, state: &State<AppState>, f: impl FnOnce(&mut Store)) -> Result<Store, String> {
+fn with_store(app: &AppHandle, state: &State<AppState>, f: impl FnOnce(&mut Store)) -> Result<Store, Error> {
     let mut guard = state.workspaces.lock().unwrap();
     if guard.is_none() {
-        let file = app.path().app_config_dir().map_err(|e| e.to_string())?.join("workspaces.json");
+        let file = app
+            .path()
+            .app_config_dir()
+            .map_err(|e| Error::Config(e.to_string()))?
+            .join("workspaces.json");
         let store = Store::load(&file);
         *guard = Some((file, store));
     }
     let (file, store) = guard.as_mut().unwrap();
     f(store);
-    store.save(file).map_err(|e| e.to_string())?;
+    store.save(file)?;
     Ok(store.clone())
 }
 
 #[tauri::command]
-fn workspaces(app: AppHandle, state: State<'_, AppState>) -> Result<Store, String> {
+fn workspaces(app: AppHandle, state: State<'_, AppState>) -> Result<Store, Error> {
     with_store(&app, &state, |_| {})
 }
 
 #[tauri::command]
-fn workspace_add(app: AppHandle, state: State<'_, AppState>, path: String) -> Result<Store, String> {
+fn workspace_add(app: AppHandle, state: State<'_, AppState>, path: String) -> Result<Store, Error> {
     with_store(&app, &state, |s| {
         s.add_root(&path);
     })
 }
 
 #[tauri::command]
-fn workspace_remove(app: AppHandle, state: State<'_, AppState>, path: String) -> Result<Store, String> {
+fn workspace_remove(app: AppHandle, state: State<'_, AppState>, path: String) -> Result<Store, Error> {
     with_store(&app, &state, |s| s.remove_root(&path))
 }
 
 #[tauri::command]
-fn workspace_activate(app: AppHandle, state: State<'_, AppState>, path: Option<String>) -> Result<Store, String> {
+fn workspace_activate(app: AppHandle, state: State<'_, AppState>, path: Option<String>) -> Result<Store, Error> {
     with_store(&app, &state, |s| s.set_active(path.as_deref()))
 }
 
 #[tauri::command]
-fn workspace_forget(app: AppHandle, state: State<'_, AppState>, repo: String) -> Result<Store, String> {
+fn workspace_forget(app: AppHandle, state: State<'_, AppState>, repo: String) -> Result<Store, Error> {
     with_store(&app, &state, |s| s.forget(&repo))
 }
 
 #[tauri::command]
-async fn workspace_scan(path: String) -> Result<ScanResult, String> {
-    tauri::async_runtime::spawn_blocking(move || workspace::scan(Path::new(&path), ScanOptions::default()).map_err(|e| e.to_string()))
+async fn workspace_scan(path: String) -> Result<ScanResult, Error> {
+    tauri::async_runtime::spawn_blocking(move || workspace::scan(Path::new(&path), ScanOptions::default()))
         .await
-        .map_err(|e| e.to_string())?
+        .map_err(internal)?
 }
 
-fn current(state: &State<AppState>) -> Result<Arc<Repo>, String> {
-    state.repo.lock().unwrap().clone().ok_or_else(|| "aucun dépôt ouvert".to_string())
+/// Une tâche de fond qui a paniqué ou a été annulée.
+fn internal(e: impl std::fmt::Display) -> Error {
+    Error::Internal(e.to_string())
+}
+
+fn current(state: &State<AppState>) -> Result<Arc<Repo>, Error> {
+    state.repo.lock().unwrap().clone().ok_or(Error::NoRepo)
 }
 
 #[tauri::command]
-async fn open_repo(app: AppHandle, state: State<'_, AppState>, path: String) -> Result<RepoSummary, String> {
-    if !Path::new(&path).exists() {
-        return Err(format!("Dossier introuvable : {path}."));
-    }
+async fn open_repo(app: AppHandle, state: State<'_, AppState>, path: String) -> Result<RepoSummary, Error> {
     let repo = tauri::async_runtime::spawn_blocking(move || Repo::open(&path))
         .await
-        .map_err(|e| e.to_string())?
-        .map_err(|e| e.to_string())?;
+        .map_err(internal)??;
     let repo = Arc::new(repo);
     let s = view::summary(&repo);
     let generation = {
@@ -100,54 +105,46 @@ async fn open_repo(app: AppHandle, state: State<'_, AppState>, path: String) -> 
 }
 
 #[tauri::command]
-async fn rows(state: State<'_, AppState>, start: u32, end: u32) -> Result<Vec<Row>, String> {
+async fn rows(state: State<'_, AppState>, start: u32, end: u32) -> Result<Vec<Row>, Error> {
     let repo = current(&state)?;
     Ok(view::rows(&repo, start, end))
 }
 
 #[tauri::command]
-async fn edges(state: State<'_, AppState>, start: u32, end: u32) -> Result<Vec<EdgeDto>, String> {
+async fn edges(state: State<'_, AppState>, start: u32, end: u32) -> Result<Vec<EdgeDto>, Error> {
     let repo = current(&state)?;
     Ok(view::edges(&repo, start, end))
 }
 
 #[tauri::command]
-async fn search(state: State<'_, AppState>, query: String) -> Result<SearchResult, String> {
+async fn search(state: State<'_, AppState>, query: String) -> Result<SearchResult, Error> {
     Ok(current(&state)?.search.search(&query))
 }
 
 #[tauri::command]
-async fn highlights(state: State<'_, AppState>, query: String, rows: Vec<u32>) -> Result<Vec<Vec<u32>>, String> {
+async fn highlights(state: State<'_, AppState>, query: String, rows: Vec<u32>) -> Result<Vec<Vec<u32>>, Error> {
     Ok(current(&state)?.search.highlights(&query, &rows))
 }
 
 #[tauri::command]
-async fn find_row(state: State<'_, AppState>, sha: String) -> Result<Option<u32>, String> {
+async fn find_row(state: State<'_, AppState>, sha: String) -> Result<Option<u32>, Error> {
     Ok(current(&state)?.find_row(&sha))
 }
 
 #[tauri::command]
-async fn commit_details(state: State<'_, AppState>, row: u32) -> Result<Details, String> {
+async fn commit_details(state: State<'_, AppState>, row: u32) -> Result<Details, Error> {
     let repo = current(&state)?;
-    tauri::async_runtime::spawn_blocking(move || view::details(&repo, row).map_err(|e| e.to_string()))
+    tauri::async_runtime::spawn_blocking(move || view::details(&repo, row))
         .await
-        .map_err(|e| e.to_string())?
+        .map_err(internal)?
 }
 
 #[tauri::command]
-async fn file_diff(
-    state: State<'_, AppState>,
-    row: u32,
-    path: String,
-    old_path: Option<String>,
-    untracked: bool,
-) -> Result<String, String> {
+async fn file_diff(state: State<'_, AppState>, row: u32, path: String, old_path: Option<String>, untracked: bool) -> Result<String, Error> {
     let repo = current(&state)?;
-    tauri::async_runtime::spawn_blocking(move || {
-        view::file_diff(&repo, row, &path, old_path.as_deref(), untracked).map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
+    tauri::async_runtime::spawn_blocking(move || view::file_diff(&repo, row, &path, old_path.as_deref(), untracked))
+        .await
+        .map_err(internal)?
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -222,7 +219,7 @@ fn watch(app: AppHandle, workdir: PathBuf, git_dir: PathBuf, generation: u64) ->
                     let _ = app.emit("repo-changed", s);
                 }
                 Err(e) => {
-                    let _ = app.emit("repo-error", e.to_string());
+                    let _ = app.emit("repo-error", e);
                 }
             }
         }
@@ -253,7 +250,7 @@ pub fn run() {
             initial_path
         ])
         .run(tauri::generate_context!())
-        .expect("erreur au lancement de Ramure");
+        .expect("failed to start Ramure");
 }
 
 /// Dépôt passé en argument (`ramure <chemin>`), sinon le dossier courant s'il est dans un dépôt

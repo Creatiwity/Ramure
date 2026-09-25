@@ -63,8 +63,9 @@ export function splitHighlights(text: string, indices: number[], offset = 0): { 
 }
 
 const DAY = 86400;
-const WEEKDAYS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
-const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+
+/** Langue d'affichage des dates et nombres (`fr`, `en`). */
+export type Locale = "fr" | "en";
 
 /** Clé du jour, pour n'afficher la date qu'à son changement. */
 export function dayKey(time: number): string {
@@ -72,20 +73,39 @@ export function dayKey(time: number): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
-/** « 17:02 » aujourd'hui, « hier », « lun. 21 » cette semaine, « 21 sept. » cette année, sinon « 21/09/2024 ». */
-export function relativeDate(time: number, now = Date.now() / 1000): string {
+const fmtCache = new Map<string, Intl.DateTimeFormat>();
+function fmt(locale: Locale, opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = locale + JSON.stringify(opts);
+  let f = fmtCache.get(key);
+  if (!f) fmtCache.set(key, (f = new Intl.DateTimeFormat(locale, opts)));
+  return f;
+}
+const rtfCache = new Map<Locale, Intl.RelativeTimeFormat>();
+function rtf(locale: Locale): Intl.RelativeTimeFormat {
+  let f = rtfCache.get(locale);
+  if (!f) rtfCache.set(locale, (f = new Intl.RelativeTimeFormat(locale, { numeric: "auto", style: "short" })));
+  return f;
+}
+
+/** Heure aujourd'hui (« 17:02 »), « hier », jour de la semaine cette semaine (« lun. 21 »),
+ *  jour et mois cette année (« 21 sept. »), sinon la date complète (« 21/09/2024 »). */
+export function relativeDate(time: number, locale: Locale = "fr", now = Date.now() / 1000): string {
   const d = new Date(time * 1000);
   const n = new Date(now * 1000);
   const startOfToday = new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime() / 1000;
-  if (time >= startOfToday) return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  if (time >= startOfToday - DAY) return "hier";
-  if (time >= startOfToday - 6 * DAY) return `${WEEKDAYS[d.getDay()]} ${d.getDate()}`;
-  if (d.getFullYear() === n.getFullYear()) return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
-  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  if (time >= startOfToday) return fmt(locale, { hour: "numeric", minute: "2-digit" }).format(d);
+  if (time >= startOfToday - DAY) return rtf(locale).format(-1, "day");
+  if (time >= startOfToday - 6 * DAY) return `${fmt(locale, { weekday: "short" }).format(d)} ${d.getDate()}`;
+  if (d.getFullYear() === n.getFullYear()) return fmt(locale, { day: "numeric", month: "short" }).format(d);
+  return fmt(locale, { day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
 }
 
-export function fullDate(time: number): string {
-  return new Date(time * 1000).toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
+export function fullDate(time: number, locale: Locale = "fr"): string {
+  return fmt(locale, { dateStyle: "long", timeStyle: "short" }).format(new Date(time * 1000));
+}
+
+export function formatNumber(n: number, locale: Locale = "fr"): string {
+  return n.toLocaleString(locale);
 }
 
 /** Tronque au milieu : `feature/…/scoring-v2`. */
@@ -103,15 +123,16 @@ export function initials(name: string): string {
   return ((parts[0]?.[0] ?? "?") + (parts[1]?.[0] ?? "")).toUpperCase();
 }
 
-/** « à l'instant », « il y a 5 min », « il y a 2 h », « hier », « il y a 3 j », puis la date. */
-export function ago(time: number, now = Date.now() / 1000): string {
+/** Durée écoulée : « maintenant », « il y a 5 min », « il y a 2 h », « hier », « il y a 3 j »,
+ *  puis la date (et leurs équivalents anglais). */
+export function ago(time: number, locale: Locale = "fr", now = Date.now() / 1000): string {
   const d = Math.max(0, now - time);
-  if (d < 60) return "à l'instant";
-  if (d < 3600) return `il y a ${Math.floor(d / 60)} min`;
-  if (d < 86400) return `il y a ${Math.floor(d / 3600)} h`;
-  if (d < 2 * 86400) return "hier";
-  if (d < 30 * 86400) return `il y a ${Math.floor(d / 86400)} j`;
-  return relativeDate(time, now);
+  const r = rtf(locale);
+  if (d < 60) return r.format(0, "second");
+  if (d < 3600) return r.format(-Math.floor(d / 60), "minute");
+  if (d < 86400) return r.format(-Math.floor(d / 3600), "hour");
+  if (d < 30 * 86400) return r.format(-Math.floor(d / 86400), "day");
+  return relativeDate(time, locale, now);
 }
 
 /** Dernier segment d'un chemin. */

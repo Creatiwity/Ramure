@@ -108,11 +108,11 @@ const TRUNK_CANDIDATES: &[&[&str]] = &[&["main", "master", "trunk"], &["develop"
 impl Repo {
     pub fn open(path: impl AsRef<Path>) -> Result<Repo, Error> {
         let t0 = Instant::now();
+        if !path.as_ref().exists() {
+            return Err(Error::NotFound(path.as_ref().display().to_string()));
+        }
         let repo = gix::discover(path.as_ref()).map_err(|e| Error::Open(e.to_string()))?;
-        let workdir = repo
-            .workdir()
-            .map(Path::to_path_buf)
-            .ok_or_else(|| Error::Open("dépôt nu non supporté".into()))?;
+        let workdir = repo.workdir().map(Path::to_path_buf).ok_or(Error::BareRepo)?;
         let git_dir = repo.git_dir().to_path_buf();
         let name = workdir.file_name().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
 
@@ -189,10 +189,10 @@ impl Repo {
                         .iter()
                         .map(|id| {
                             let Ok(commit) = repo.find_commit(*id) else {
-                                return (0, String::new(), String::new(), String::from("(commit illisible)"));
+                                return (0, String::new(), String::new(), String::new());
                             };
                             let Ok(c) = commit.decode() else {
-                                return (0, String::new(), String::new(), String::from("(commit illisible)"));
+                                return (0, String::new(), String::new(), String::new());
                             };
                             let time = c.committer().map(|s| s.seconds()).unwrap_or(0);
                             let (author, email) = c

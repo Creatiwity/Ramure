@@ -4,6 +4,7 @@
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { rank, type FuzzyMatch } from "../lib/fuzzy";
 import { splitHighlights } from "../lib/format";
+import { useI18n } from "vue-i18n";
 import Icon from "./Icon.vue";
 
 export interface PaletteItem {
@@ -22,6 +23,7 @@ export interface PaletteItem {
 const props = defineProps<{ items: PaletteItem[]; placeholder?: string }>();
 const emit = defineEmits<{ close: [] }>();
 
+const { t } = useI18n();
 const query = ref("");
 const active = ref(0);
 const input = ref<HTMLInputElement>();
@@ -63,10 +65,10 @@ onMounted(() => input.value?.focus());
 
 <template>
   <div class="veil" @mousedown.self="emit('close')">
-    <div class="palette" role="dialog" aria-label="Palette de commandes">
+    <div class="palette" role="dialog" :aria-label="t('palette.title')">
       <label class="in">
         <Icon name="search" />
-        <input id="palette" ref="input" v-model="query" :placeholder="placeholder ?? 'Dépôt, branche, action…'" spellcheck="false" autocomplete="off" @keydown="onKey" />
+        <input id="palette" ref="input" v-model="query" :placeholder="placeholder ?? t('palette.placeholder')" spellcheck="false" autocomplete="off" @keydown="onKey" />
       </label>
       <div ref="list" class="res">
         <template v-for="(r, i) in results" :key="r.item.id">
@@ -80,9 +82,11 @@ onMounted(() => input.value?.focus());
             <kbd v-if="r.item.hint">{{ r.item.hint }}</kbd>
           </button>
         </template>
-        <div v-if="!results.length" class="none">Aucun résultat.</div>
+        <div v-if="!results.length" class="none">{{ t("palette.none") }}</div>
       </div>
-      <footer><span><kbd>↑</kbd><kbd>↓</kbd> naviguer</span><span><kbd>↵</kbd> ouvrir</span><span><kbd>Échap</kbd> fermer</span></footer>
+      <footer>
+        <span><kbd>↑</kbd><kbd>↓</kbd> {{ t("palette.navigate") }}</span><span><kbd>↵</kbd> {{ t("palette.open") }}</span><span><kbd>{{ t("palette.esc") }}</kbd> {{ t("palette.close") }}</span>
+      </footer>
     </div>
   </div>
 </template>

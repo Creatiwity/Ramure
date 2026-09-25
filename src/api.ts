@@ -299,7 +299,7 @@ export function sampleApi(load: () => Promise<Sample>): Api {
     initialPath: async () => (await get()).summary.path,
     openRepo: async (path) => {
       const d = await get();
-      if (path !== d.summary.path) throw new Error("Mode navigateur : seul le dépôt d'exemple peut être ouvert.");
+      if (path !== d.summary.path) throw { code: "demo_only", detail: path };
       demoStore.recordOpen(path);
       return d.summary;
     },
@@ -317,7 +317,7 @@ export function sampleApi(load: () => Promise<Sample>): Api {
     findRow: async (sha) => (await get()).rows.find((r) => r.id.startsWith(sha))?.row ?? null,
     commitDetails: async (row) => {
       const d = (await get()).details[String(row)];
-      if (!d) throw new Error("détails non inclus dans l'échantillon");
+      if (!d) throw { code: "demo_missing", detail: String(row) };
       return d;
     },
     fileDiff: async (row, path) => (await get()).diffs[`${row}:${path}`] ?? "",
@@ -361,6 +361,6 @@ export const api: Api = inTauri
   ? tauriApi
   : sampleApi(async () => {
       const res = await fetch("/sample.json");
-      if (!res.ok) throw new Error("public/sample.json absent : lancez `npm run sample`");
+      if (!res.ok) throw { code: "demo_sample", detail: "public/sample.json" };
       return res.json();
     });

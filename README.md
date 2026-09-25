@@ -51,6 +51,8 @@ Phase 0 (prototype de performance) et phase 1 (viewer) de la feuille de route :
 - **Identité git effective** et fichier de config d'où elle vient.
 - **Rafraîchissement automatique** : un commit, un checkout ou un fetch fait dans le terminal
   met le graph à jour tout seul, sans perdre la sélection.
+- **Français et anglais** : langue du système par défaut, choix Système / Français / English
+  (bouton globe de la barre d'outils ou palette) ; dates et nombres au format de la langue.
 - Thèmes clair et sombre (suit le système), clavier : ↑/↓ ou j/k, PageUp/PageDown, Home/End,
   `h` pour aller à HEAD.
 

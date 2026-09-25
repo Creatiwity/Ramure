@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import type { RefInfo, RepoSummary } from "../api";
+import { useI18n } from "vue-i18n";
 import Icon from "./Icon.vue";
+
+const { t } = useI18n();
 
 const props = defineProps<{ summary: RepoSummary }>();
 const emit = defineEmits<{ goto: [row: number] }>();
@@ -21,15 +24,15 @@ const groups = computed<Group[]>(() => {
   const keep = (r: RefInfo) => !f || r.name.toLowerCase().includes(f);
   const refs = props.summary.refs.filter(keep);
   const byName = (a: RefInfo, b: RefInfo) => (a.head ? -1 : b.head ? 1 : a.name.localeCompare(b.name));
-  const out: Group[] = [{ key: "local", label: "Local", icon: "laptop", items: refs.filter((r) => r.kind === "local").sort(byName) }];
+  const out: Group[] = [{ key: "local", label: t("sidebar.local"), icon: "laptop", items: refs.filter((r) => r.kind === "local").sort(byName) }];
   const remotes = new Map<string, RefInfo[]>();
   for (const r of refs.filter((r) => r.kind === "remote")) {
     const name = r.name.split("/")[0];
     remotes.set(name, [...(remotes.get(name) ?? []), r]);
   }
   for (const [name, items] of [...remotes].sort()) out.push({ key: `remote:${name}`, label: name, icon: "cloud", items: items.sort(byName) });
-  out.push({ key: "tags", label: "Tags", icon: "tag", items: refs.filter((r) => r.kind === "tag").sort((a, b) => b.name.localeCompare(a.name, undefined, { numeric: true })) });
-  out.push({ key: "stash", label: "Stashes", icon: "box", items: refs.filter((r) => r.kind === "stash") });
+  out.push({ key: "tags", label: t("sidebar.tags"), icon: "tag", items: refs.filter((r) => r.kind === "tag").sort((a, b) => b.name.localeCompare(a.name, undefined, { numeric: true })) });
+  out.push({ key: "stash", label: t("sidebar.stashes"), icon: "box", items: refs.filter((r) => r.kind === "stash") });
   return out;
 });
 
@@ -42,7 +45,7 @@ function shortName(g: Group, r: RefInfo) {
   <aside class="side">
     <label class="filter">
       <Icon name="search" />
-      <input id="ref-filter" v-model="filter" placeholder="Filtrer les refs" spellcheck="false" />
+      <input id="ref-filter" v-model="filter" :placeholder="t('sidebar.filter')" spellcheck="false" />
     </label>
     <div class="groups">
       <section v-for="g in groups" :key="g.key" class="group">
@@ -55,9 +58,9 @@ function shortName(g: Group, r: RefInfo) {
           <button v-for="r in g.items" :key="r.full" class="item" :class="{ cur: r.head }" :title="r.name" @click="emit('goto', r.row)">
             <Icon :name="r.head ? 'check' : g.icon" />
             <span class="name">{{ shortName(g, r) }}</span>
-            <span v-if="r.synced_remote" class="sync" title="Identique à sa branche distante">⇅</span>
+            <span v-if="r.synced_remote" class="sync" :title="t('sidebar.synced')">⇅</span>
           </button>
-          <div v-if="!g.items.length" class="empty">Aucune</div>
+          <div v-if="!g.items.length" class="empty">{{ t("sidebar.none") }}</div>
         </template>
       </section>
     </div>

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from "vue";
 import { api, inTauri, type FileChange, type RepoSummary, type ScanResult, type TreeNode, type WorkStatus, type WorkspaceStore } from "./api";
-import { ago, basename, relativeTo, usesConventionalCommits } from "./lib/format";
+import { useI18n } from "vue-i18n";
+import { ago, basename, formatNumber, relativeTo, usesConventionalCommits, type Locale } from "./lib/format";
+import { errorText, loadLangPref, setLangPref, systemLang, type LangPref } from "./i18n";
 import GraphView from "./components/GraphView.vue";
 import Sidebar from "./components/Sidebar.vue";
 import DetailsPanel from "./components/DetailsPanel.vue";
@@ -10,11 +12,32 @@ import Icon from "./components/Icon.vue";
 import WorkspacePanel from "./components/WorkspacePanel.vue";
 import CommandPalette, { type PaletteItem } from "./components/CommandPalette.vue";
 
+const { t, locale } = useI18n();
+const loc = computed(() => locale.value as Locale);
+const langPref = ref<LangPref>(loadLangPref());
+const langMenu = ref(false);
+function chooseLang(p: LangPref) {
+  langPref.value = p;
+  langMenu.value = false;
+  setLangPref(p);
+}
+const langName = (l: Locale) => t(`lang.${l}`);
+
 const summary = shallowRef<RepoSummary | null>(null);
 const revision = ref(0);
 const selected = ref<number | null>(null);
 const opening = ref(false);
 const error = ref<string | null>(null);
+/** Code de la dernière erreur du cœur (`not_found`, `open`…), pour réagir sans lire le texte. */
+const errorCode = ref<string | null>(null);
+function fail(e: unknown) {
+  error.value = errorText(e);
+  errorCode.value = e && typeof e === "object" && "code" in e ? String((e as { code: string }).code) : null;
+}
+const langBox = ref<HTMLDivElement>();
+function onDocDown(e: MouseEvent) {
+  if (langMenu.value && langBox.value && !langBox.value.contains(e.target as Node)) langMenu.value = false;
+}
 const conventional = ref(false);
 const rainbow = ref(load("ramure.rainbow") === "1");
 const theme = ref<string>(load("ramure.theme") ?? "");
@@ -59,7 +82,7 @@ function cycleTheme() {
   save("ramure.theme", theme.value);
   applyTheme();
 }
-const themeLabel = computed(() => (theme.value === "light" ? "Clair" : theme.value === "dark" ? "Sombre" : "Système"));
+const themeLabel = computed(() => t(theme.value === "light" ? "toolbar.themeLight" : theme.value === "dark" ? "toolbar.themeDark" : "toolbar.themeSystem"));
 function toggleRainbow() {
   rainbow.value = !rainbow.value;
   save("ramure.rainbow", rainbow.value ? "1" : "0");
@@ -68,6 +91,7 @@ function toggleRainbow() {
 async function open(path: string) {
   opening.value = true;
   error.value = null;
+  errorCode.value = null;
   try {
     const s = await api.openRepo(path);
     summary.value = s;
@@ -84,7 +108,7 @@ async function open(path: string) {
       graph.value?.focus();
     });
   } catch (e) {
-    error.value = String(e);
+    fail(e);
   } finally {
     opening.value = false;
   }
@@ -105,7 +129,7 @@ async function rescan() {
     if (t === scanToken) wsScan.value = res;
   } catch (e) {
     if (t === scanToken) wsScan.value = { root, tree: [], repos: 0, truncated: false, elapsed_ms: 0 };
-    error.value = String(e);
+    fail(e);
   } finally {
     if (t === scanToken) scanning.value = false;
   }
@@ -113,7 +137,7 @@ async function rescan() {
 async function addRoot() {
   if (!inTauri) return;
   const { open: dialog } = await import("@tauri-apps/plugin-dialog");
-  const dir = await dialog({ directory: true, title: "Choisir un dossier racine (ses dépôts seront listés)" });
+  const dir = await dialog({ directory: true, title: t("app.dialogRoot") });
   if (typeof dir !== "string") return;
   ws.value = await api.workspaceAdd(dir);
   panelOpen.value = true;
@@ -155,9 +179,9 @@ const paletteItems = computed<PaletteItem[]>(() => {
       seen.add(r.path);
       items.push({
         id: `recent:${r.path}`,
-        group: "Dépôts récents",
+        group: t("palette.groupRecent"),
         label: basename(r.path),
-        detail: `${basename(root.path)} · ${relativeTo(r.path, root.path)} · ${ago(r.opened_at)}`,
+        detail: `${basename(root.path)} · ${relativeTo(r.path, root.path)} · ${ago(r.opened_at, loc.value)}`,
         search: `${basename(r.path)} ${relativeTo(r.path, root.path)}`,
         icon: "repo",
         hint: root.path === activeRoot && i < 9 ? `${modKey}${i + 1}` : undefined,
@@ -168,7 +192,7 @@ const paletteItems = computed<PaletteItem[]>(() => {
   ws.value.recent_outside.forEach((r) => {
     if (seen.has(r.path)) return;
     seen.add(r.path);
-    items.push({ id: `recent:${r.path}`, group: "Dépôts récents", label: basename(r.path), detail: `${r.path} · ${ago(r.opened_at)}`, icon: "repo", run: () => openRepo(r.path) });
+    items.push({ id: `recent:${r.path}`, group: t("palette.groupRecent"), label: basename(r.path), detail: `${r.path} · ${ago(r.opened_at, loc.value)}`, icon: "repo", run: () => openRepo(r.path) });
   });
   // 2. Dépôts trouvés dans le contexte actif.
   const walk = (nodes: TreeNode[]) =>
@@ -177,51 +201,57 @@ const paletteItems = computed<PaletteItem[]>(() => {
       if (seen.has(n.path)) return;
       seen.add(n.path);
       const rel = relativeTo(n.path, wsScan.value?.root ?? null);
-      items.push({ id: `repo:${n.path}`, group: `Dépôts de ${basename(activeRoot ?? "")}`, label: basename(n.path), detail: n.branch ? `${rel} · ${n.branch}` : rel, search: rel, icon: "repo", run: () => openRepo(n.path) });
+      items.push({ id: `repo:${n.path}`, group: t("palette.groupRepos", { root: basename(activeRoot ?? "") }), label: basename(n.path), detail: n.branch ? `${rel} · ${n.branch}` : rel, search: rel, icon: "repo", run: () => openRepo(n.path) });
     });
   walk(wsScan.value?.tree ?? []);
   // 3. Branches et tags du dépôt ouvert.
   for (const r of summary.value?.refs ?? []) {
     if (r.merged_into_local) continue;
-    const kind = r.kind === "local" ? "branche locale" : r.kind === "remote" ? "branche distante" : r.kind === "tag" ? "tag" : "stash";
-    items.push({ id: `ref:${r.full}`, group: "Branches et tags", label: r.name, detail: r.head ? `${kind} · HEAD` : kind, icon: r.kind === "tag" ? "tag" : r.kind === "remote" ? "cloud" : r.kind === "stash" ? "box" : "branch", run: () => gotoRow(r.row) });
+    const kind = t(r.kind === "local" ? "palette.refLocal" : r.kind === "remote" ? "palette.refRemote" : r.kind === "tag" ? "palette.refTag" : "palette.refStash");
+    items.push({ id: `ref:${r.full}`, group: t("palette.groupRefs"), label: r.name, detail: r.head ? `${kind} · HEAD` : kind, icon: r.kind === "tag" ? "tag" : r.kind === "remote" ? "cloud" : r.kind === "stash" ? "box" : "branch", run: () => gotoRow(r.row) });
   }
   // 4. Autres contextes.
   for (const root of ws.value.roots) {
     if (root.path === activeRoot) continue;
-    items.push({ id: `ctx:${root.path}`, group: "Espaces", label: `Passer à ${basename(root.path)}`, detail: root.path, search: `espace ${basename(root.path)}`, icon: "folder", run: () => activateRoot(root.path) });
+    items.push({ id: `ctx:${root.path}`, group: t("palette.groupContexts"), label: t("palette.switchTo", { name: basename(root.path) }), detail: root.path, search: t("palette.switchSearch", { name: basename(root.path) }), icon: "folder", run: () => activateRoot(root.path) });
   }
   // 5. Actions.
   const actions: [string, string, string | undefined, () => void][] = [
-    ["Ouvrir un dépôt…", "folder", `${modKey}O`, pickFolder],
-    ["Ajouter un dossier racine…", "plus", undefined, addRoot],
-    [panelOpen.value ? "Masquer le panneau des espaces" : "Afficher le panneau des espaces", "panel", `${modKey}⇧E`, togglePanel],
-    ["Rechercher dans l'historique", "search", `${modKey}F`, () => searchInput.value?.focus()],
-    ["Rechercher à nouveau les dépôts", "refresh", undefined, rescan],
-    [rainbow.value ? "Couleurs : focus" : "Couleurs : arc-en-ciel", "palette", undefined, toggleRainbow],
-    [`Thème : ${theme.value === "" ? "clair" : theme.value === "light" ? "sombre" : "système"}`, "sun", undefined, cycleTheme],
+    [t("palette.actOpen"), "folder", `${modKey}O`, pickFolder],
+    [t("palette.actAddRoot"), "plus", undefined, addRoot],
+    [t(panelOpen.value ? "palette.actHidePanel" : "palette.actShowPanel"), "panel", `${modKey}⇧E`, togglePanel],
+    [t("palette.actSearch"), "search", `${modKey}F`, () => searchInput.value?.focus()],
+    [t("palette.actRescan"), "refresh", undefined, rescan],
+    [t(rainbow.value ? "palette.actFocus" : "palette.actRainbow"), "palette", undefined, toggleRainbow],
+    [t("palette.actTheme", { name: t(theme.value === "" ? "toolbar.themeLight" : theme.value === "light" ? "toolbar.themeDark" : "toolbar.themeSystem") }), "sun", undefined, cycleTheme],
   ];
+  // Changement de langue : les deux autres choix.
+  for (const p of ["", "fr", "en"] as LangPref[]) {
+    if (p === langPref.value) continue;
+    const name = p ? langName(p) : t("lang.systemDetected", { lang: langName(systemLang()) });
+    actions.push([t("palette.actLanguage", { name }), "globe", undefined, () => chooseLang(p)]);
+  }
   if (summary.value?.head.row != null) {
     const headRow = summary.value.head.row;
-    actions.splice(3, 0, ["Aller à HEAD", "check", "H", () => gotoRow(headRow)]);
+    actions.splice(3, 0, [t("palette.actHead"), "check", "H", () => gotoRow(headRow)]);
   }
-  actions.forEach(([label, icon, hint, run]) => items.push({ id: `act:${label}`, group: "Actions", label, icon, hint, run }));
+  actions.forEach(([label, icon, hint, run]) => items.push({ id: `act:${label}`, group: t("palette.groupActions"), label, icon, hint, run }));
   return items;
 });
 
 /** Ouvre un dépôt ; s'il n'existe plus sur le disque, il est retiré des récents. */
 async function openRepo(path: string) {
   await open(path);
-  if (error.value?.includes("Dossier introuvable")) {
+  if (errorCode.value === "not_found") {
     await forgetRepo(path);
-    error.value += " Il a été retiré des récents.";
+    error.value += " " + t("app.removedFromRecents");
   }
 }
 
 async function pickFolder() {
   if (!inTauri) return;
   const { open: dialog } = await import("@tauri-apps/plugin-dialog");
-  const dir = await dialog({ directory: true, title: "Ouvrir un dépôt git" });
+  const dir = await dialog({ directory: true, title: t("app.dialogOpen") });
   if (typeof dir === "string") open(dir);
 }
 
@@ -316,6 +346,7 @@ const unlisten: (() => void)[] = [];
 onMounted(async () => {
   applyTheme();
   window.addEventListener("keydown", onGlobalKey);
+  document.addEventListener("mousedown", onDocDown);
   if (inTauri) {
     const { listen } = await import("@tauri-apps/api/event");
     const { getCurrentWebview } = await import("@tauri-apps/api/webview");
@@ -331,6 +362,7 @@ onMounted(async () => {
           selected.value = row ?? ev.payload.head.row;
         }
       }),
+      await listen<unknown>("repo-error", (ev) => fail(ev.payload)),
       await listen<WorkStatus>("status-changed", (ev) => {
         if (summary.value) summary.value = { ...summary.value, status: ev.payload };
       }),
@@ -346,34 +378,36 @@ onMounted(async () => {
 });
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", onGlobalKey);
+  document.removeEventListener("mousedown", onDocDown);
   unlisten.forEach((u) => u());
 });
 
 const statusText = computed(() => {
   const s = summary.value;
   if (!s) return "";
-  const t = s.timings.total_ms;
-  return `${s.rows.toLocaleString("fr-FR")} commits · chargé en ${t < 1000 ? Math.round(t) + " ms" : (t / 1000).toFixed(1) + " s"}`;
+  const ms = s.timings.total_ms;
+  const time = ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toLocaleString(loc.value, { maximumFractionDigits: 1 })} s`;
+  return t("status.loaded", { n: formatNumber(s.rows, loc.value), time }, s.rows);
 });
 </script>
 
 <template>
   <div class="app">
     <header class="tb">
-      <button class="tool icon" :class="{ on: panelOpen }" :title="`${panelOpen ? 'Masquer' : 'Afficher'} le panneau des espaces (${modKey}⇧E)`" @click="togglePanel">
+      <button class="tool icon" :class="{ on: panelOpen }" :title="t(panelOpen ? 'toolbar.hidePanel' : 'toolbar.showPanel', { key: `${modKey}⇧E` })" @click="togglePanel">
         <Icon name="panel" />
       </button>
       <template v-if="summary">
-        <button class="crumb" :title="`Ouvrir un autre dépôt (${modKey}O)`" @click="pickFolder">
+        <button class="crumb" :title="t('app.openAnother', { key: `${modKey}O` })" @click="pickFolder">
           <Icon name="folder" /><b>{{ summary.name }}</b>
-          <span class="br"><Icon name="branch" />{{ summary.head.branch ?? (summary.head.detached ? "HEAD détaché" : "—") }}</span>
+          <span class="br"><Icon name="branch" />{{ summary.head.branch ?? (summary.head.detached ? t("app.detached") : "—") }}</span>
         </button>
         <span class="sep"></span>
-        <span v-if="summary.identity.email" class="idchip" :title="`Identité git effective\n${summary.identity.name ?? ''} <${summary.identity.email}>\nDéfinie dans : ${summary.identity.origin ?? '?'}`">
+        <span v-if="summary.identity.email" class="idchip" :title="t('toolbar.identityTitle', { name: summary.identity.name ?? '', email: summary.identity.email, origin: summary.identity.origin ?? '?' })">
           <Icon name="user" />{{ summary.identity.email }}<span class="origin">{{ summary.identity.origin?.replace(/^.*\//, "") }}</span>
         </span>
-        <span v-else class="idchip warn" title="Aucune identité git configurée pour ce dépôt"><Icon name="warn" />Pas d'identité git</span>
-        <span v-if="summary.status.operation" class="opchip"><Icon name="warn" />{{ summary.status.operation }} en cours</span>
+        <span v-else class="idchip warn" :title="t('toolbar.noIdentityTitle')"><Icon name="warn" />{{ t("toolbar.noIdentity") }}</span>
+        <span v-if="summary.status.operation" class="opchip"><Icon name="warn" />{{ t("toolbar.operation", { op: summary.status.operation }) }}</span>
       </template>
       <label class="search" :class="{ on: query }">
         <Icon name="search" />
@@ -382,22 +416,33 @@ const statusText = computed(() => {
           ref="searchInput"
           v-model="query"
           :disabled="!summary"
-          placeholder="Rechercher : message, sha, auteur, ref…"
+:placeholder="t('toolbar.searchPlaceholder')"
           spellcheck="false"
           autocomplete="off"
           @input="runSearch"
           @keydown="onSearchKey"
         />
         <span v-if="searchInfo" class="count">
-          {{ searchInfo.total ? `${hitIndex + 1} / ${searchInfo.total.toLocaleString("fr-FR")}` : "aucun résultat" }} · {{ searchInfo.ms.toFixed(1) }} ms
+          {{ searchInfo.total ? `${formatNumber(hitIndex + 1, loc)} / ${formatNumber(searchInfo.total, loc)}` : t("toolbar.noResult") }} ·
+          {{ searchInfo.ms.toLocaleString(loc, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) }} ms
         </span>
         <kbd v-else>{{ modKey }}F</kbd>
       </label>
-      <button class="tool" :title="`Palette de commandes (${modKey}K)`" @click="paletteOpen = true"><Icon name="cmd" />{{ modKey }}K</button>
-      <button class="tool" :title="rainbow ? 'Couleurs : arc-en-ciel' : 'Couleurs : focus (branche courante et troncs)'" @click="toggleRainbow">
-        <Icon name="palette" />{{ rainbow ? "Arc-en-ciel" : "Focus" }}
+      <button class="tool" :title="t('toolbar.palette', { key: `${modKey}K` })" @click="paletteOpen = true"><Icon name="cmd" />{{ modKey }}K</button>
+      <button class="tool" :title="t(rainbow ? 'toolbar.rainbowTitle' : 'toolbar.focusTitle')" @click="toggleRainbow">
+        <Icon name="palette" />{{ t(rainbow ? "toolbar.rainbow" : "toolbar.focus") }}
       </button>
-      <button class="tool" title="Thème" @click="cycleTheme"><Icon name="sun" />{{ themeLabel }}</button>
+      <button class="tool" :title="t('toolbar.theme')" @click="cycleTheme"><Icon name="sun" />{{ themeLabel }}</button>
+      <div ref="langBox" class="langbox">
+        <button class="tool" :title="t('lang.title')" :aria-expanded="langMenu" @click="langMenu = !langMenu"><Icon name="globe" />{{ loc.toUpperCase() }}</button>
+        <div v-if="langMenu" class="langmenu" role="menu">
+          <button v-for="p in (['', 'fr', 'en'] as LangPref[])" :key="p" class="lmi" :class="{ on: p === langPref }" role="menuitemradio" :aria-checked="p === langPref" @click="chooseLang(p)">
+            <Icon name="check" :style="{ visibility: p === langPref ? 'visible' : 'hidden' }" />
+            <span v-if="p" :lang="p">{{ langName(p) }}</span>
+            <span v-else class="two"><span>{{ t("lang.system") }}</span><small>{{ t("lang.systemDetected", { lang: langName(systemLang()) }) }}</small></span>
+          </button>
+        </div>
+      </div>
     </header>
 
     <div class="shell" :class="{ withPanel: panelOpen }">
@@ -439,35 +484,35 @@ const statusText = computed(() => {
     <main v-else class="welcome">
       <div class="card">
         <h1>Ramure</h1>
-        <p>Viewer git en lecture seule. Ouvrez un dépôt, ou glissez son dossier sur cette fenêtre.</p>
-        <button class="btn primary" :disabled="opening || !inTauri" @click="pickFolder"><Icon name="folder" />Ouvrir un dépôt… <kbd>{{ modKey }}O</kbd></button>
-        <p v-if="!inTauri" class="muted">Mode navigateur : données d'exemple (<span class="mono">public/sample.json</span>).</p>
+        <p>{{ t("app.tagline") }}</p>
+        <button class="btn primary" :disabled="opening || !inTauri" @click="pickFolder"><Icon name="folder" />{{ t("app.openRepo") }} <kbd>{{ modKey }}O</kbd></button>
+        <p v-if="!inTauri" class="muted">{{ t("app.browserMode", { file: "public/sample.json" }) }}</p>
         <p v-if="error" class="err">{{ error }}</p>
         <div v-if="activeRecents.length" class="recents">
-          <span class="eyebrow">Récents</span>
+          <span class="eyebrow">{{ t("app.recents") }}</span>
           <button v-for="(r, i) in activeRecents" :key="r.path" class="recent" @click="openRepo(r.path)">
-            <Icon name="repo" /><b>{{ basename(r.path) }}</b><span class="rp">{{ relativeTo(r.path, ws.active) }}</span><span class="when">{{ ago(r.opened_at) }}</span
+            <Icon name="repo" /><b>{{ basename(r.path) }}</b><span class="rp">{{ relativeTo(r.path, ws.active) }}</span><span class="when">{{ ago(r.opened_at, loc) }}</span
             ><kbd>{{ modKey }}{{ i + 1 }}</kbd>
           </button>
         </div>
-        <p v-else-if="!ws.roots.length" class="muted">Astuce : ajoutez un dossier racine (par exemple ~/code) dans le panneau de gauche pour retrouver vos dépôts en un clic.</p>
-        <p class="muted"><kbd>{{ modKey }}K</kbd> ouvre la palette : dépôts récents, dépôts du dossier racine, actions.</p>
-        <p v-if="opening" class="muted">Ouverture…</p>
+        <p v-else-if="!ws.roots.length" class="muted">{{ t("app.tipRoot") }}</p>
+        <p class="muted"><kbd>{{ modKey }}K</kbd> {{ t("app.tipPalette") }}</p>
+        <p v-if="opening" class="muted">{{ t("app.opening") }}</p>
       </div>
     </main>
     </div>
 
     <div v-if="error && summary" class="toast" role="alert">
-      <Icon name="warn" /><span>{{ error }}</span><button class="tool" @click="error = null"><Icon name="x" /></button>
+      <Icon name="warn" /><span>{{ error }}</span><button class="tool" :title="t('app.dismiss')" @click="error = null"><Icon name="x" /></button>
     </div>
 
     <CommandPalette v-if="paletteOpen" :items="paletteItems" @close="paletteOpen = false" />
 
     <footer v-if="summary" class="status">
       <span>{{ statusText }}</span>
-      <span v-if="summary.trunk_names.length">Troncs : {{ summary.trunk_names.join(", ") }}</span>
-      <span>Couleurs : {{ rainbow ? "arc-en-ciel" : "focus" }}</span>
-      <span class="r">Lecture seule · git {{ summary.git_version ?? "?" }} · gix</span>
+      <span v-if="summary.trunk_names.length">{{ t("status.trunks", { names: summary.trunk_names.join(", ") }) }}</span>
+      <span>{{ t("status.colors", { mode: t(rainbow ? "status.rainbow" : "status.focus") }) }}</span>
+      <span class="r">{{ t("status.readOnly", { version: summary.git_version ?? "?" }) }}</span>
     </footer>
   </div>
 </template>
@@ -616,6 +661,48 @@ const statusText = computed(() => {
   display: grid;
   grid-template-columns: 210px minmax(0, 1fr) 320px;
   min-height: 0;
+}
+.langbox {
+  position: relative;
+}
+.langmenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  min-width: 200px;
+  background: var(--raise);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  box-shadow: var(--shadow);
+  padding: 4px;
+}
+.lmi {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+.lmi:hover {
+  background: var(--hover);
+}
+.lmi.on {
+  background: var(--sel);
+}
+.lmi .two {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.lmi small {
+  color: var(--ink-3);
+  font-size: 11px;
 }
 .tool.icon {
   padding: 5px;

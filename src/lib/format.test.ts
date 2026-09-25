@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { middleEllipsis, parseMessage, relativeDate, splitHighlights, usesConventionalCommits, initials } from "./format";
 import { fuzzyIncludes, highlightIndices } from "../api";
 
+/** Intl utilise des espaces insécables : on les compare comme des espaces. */
+const sp = (s: string) => s.replace(/[\u00a0\u202f]/g, " ");
+
 describe("parseMessage", () => {
   it("sépare type, portée et sujet", () => {
     const m = parseMessage("feat(scoring): pondère les tâches en retard");
@@ -35,12 +38,20 @@ describe("splitHighlights", () => {
 
 describe("relativeDate", () => {
   const now = new Date(2026, 8, 24, 18, 0).getTime() / 1000;
-  it("affiche l'heure aujourd'hui, « hier », le jour de la semaine, puis la date", () => {
-    expect(relativeDate(new Date(2026, 8, 24, 17, 2).getTime() / 1000, now)).toBe("17:02");
-    expect(relativeDate(new Date(2026, 8, 23, 9, 0).getTime() / 1000, now)).toBe("hier");
-    expect(relativeDate(new Date(2026, 8, 21, 9, 0).getTime() / 1000, now)).toBe("lun. 21");
-    expect(relativeDate(new Date(2026, 5, 2, 9, 0).getTime() / 1000, now)).toBe("2 juin");
-    expect(relativeDate(new Date(2024, 8, 21, 9, 0).getTime() / 1000, now)).toBe("21/09/2024");
+  const at = (...a: [number, number, number, number, number]) => new Date(...a).getTime() / 1000;
+  it("affiche l'heure aujourd'hui, « hier », le jour de la semaine, puis la date (fr)", () => {
+    expect(sp(relativeDate(at(2026, 8, 24, 17, 2), "fr", now))).toBe("17:02");
+    expect(sp(relativeDate(at(2026, 8, 23, 9, 0), "fr", now))).toBe("hier");
+    expect(sp(relativeDate(at(2026, 8, 21, 9, 0), "fr", now))).toBe("lun. 21");
+    expect(sp(relativeDate(at(2026, 5, 2, 9, 0), "fr", now))).toBe("2 juin");
+    expect(sp(relativeDate(at(2024, 8, 21, 9, 0), "fr", now))).toBe("21/09/2024");
+  });
+  it("mêmes règles en anglais", () => {
+    expect(sp(relativeDate(at(2026, 8, 24, 17, 2), "en", now))).toBe("5:02 PM");
+    expect(sp(relativeDate(at(2026, 8, 23, 9, 0), "en", now))).toBe("yesterday");
+    expect(sp(relativeDate(at(2026, 8, 21, 9, 0), "en", now))).toBe("Mon 21");
+    expect(sp(relativeDate(at(2026, 5, 2, 9, 0), "en", now))).toBe("Jun 2");
+    expect(sp(relativeDate(at(2024, 8, 21, 9, 0), "en", now))).toBe("09/21/2024");
   });
 });
 

@@ -80,7 +80,11 @@ pub struct ScanResult {
 pub fn scan(root: &Path, opts: ScanOptions) -> Result<ScanResult, Error> {
     let t = std::time::Instant::now();
     if !root.is_dir() {
-        return Err(Error::Open(format!("{} n'est pas un dossier", root.display())));
+        return Err(if root.exists() {
+            Error::NotADirectory(root.display().to_string())
+        } else {
+            Error::NotFound(root.display().to_string())
+        });
     }
     let mut count = 0usize;
     let mut truncated = false;
@@ -278,11 +282,11 @@ impl Store {
     /// Écrit le store de façon atomique (fichier temporaire puis renommage).
     pub fn save(&self, file: &Path) -> Result<(), Error> {
         if let Some(dir) = file.parent() {
-            fs::create_dir_all(dir).map_err(|e| Error::Git(format!("config : {e}")))?;
+            fs::create_dir_all(dir).map_err(|e| Error::Config(e.to_string()))?;
         }
         let tmp = file.with_extension("json.tmp");
-        fs::write(&tmp, serde_json::to_vec_pretty(self).unwrap()).map_err(|e| Error::Git(format!("config : {e}")))?;
-        fs::rename(&tmp, file).map_err(|e| Error::Git(format!("config : {e}")))
+        fs::write(&tmp, serde_json::to_vec_pretty(self).unwrap()).map_err(|e| Error::Config(e.to_string()))?;
+        fs::rename(&tmp, file).map_err(|e| Error::Config(e.to_string()))
     }
 
     /// Ajoute un dossier racine (ou le réactive s'il existe) et en fait le contexte actif.

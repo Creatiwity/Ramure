@@ -409,7 +409,15 @@ Wayland). git ≥ 2.38 requis (pour `--update-refs`), vérifié au démarrage.
 ### 4.4 Accessibilité et i18n
 
 Navigation clavier complète, focus visible, contrastes WCAG AA dans les deux thèmes, formes en
-plus des couleurs (D8), palette vérifiée en daltonisme. FR et EN dès le MVP.
+plus des couleurs (D8), palette vérifiée en daltonisme. FR et EN dès le MVP :
+
+- langue par défaut : celle du système (français si la langue du système est le français, anglais
+  sinon) ; choix Système / Français / English dans la barre d'outils (bouton globe) et dans la
+  palette ⌘K, mémorisé ;
+- dates, durées relatives et nombres formatés avec `Intl` dans la langue choisie ;
+- le cœur Rust ne renvoie pas de phrases mais des **codes d'erreur** stables (`not_found`,
+  `open`, `git`…) accompagnés d'un détail technique ; le front les traduit ;
+- un test vérifie que les fichiers de traduction ont exactement les mêmes clés.
 
 ---
 
@@ -532,7 +540,7 @@ ramure/
 **v0.2 livrée : phase 0 et l'essentiel de la phase 1** (voir `README.md` et `PERF.md`).
 La v0.2 ajoute les espaces de travail (F-08) et une première palette ⌘K.
 
-- Fait : F-01, F-04, F-08, F-10 à F-16, F-18, F-20, F-22, F-26, F-30 à F-32, F-36, F-40 à F-42,
+- Fait : i18n FR/EN (§4.4), F-01, F-04, F-08, F-10 à F-16, F-18, F-20, F-22, F-26, F-30 à F-32, F-36, F-40 à F-42,
   F-45, F-50, barre latérale, thèmes. Ouverture de 100 k commits en ~0,55 s, recherche en 8 à
   15 ms par frappe.
 - En partie : palette ⌘K (dépôts, contextes, branches et tags, actions de lecture ; pas encore
@@ -540,7 +548,7 @@ La v0.2 ajoute les espaces de travail (F-08) et une première palette ⌘K.
   raccourcis, sans mode first-parent), F-33 (`author:`, `msg:`, `ref:`, `sha:` ; pas encore
   `before:`, `after:`, `merge:`).
 - Pas encore : F-03 (onglets), F-21, F-23, F-24, F-34, F-35, F-43, F-44, F-51,
-  i18n EN, benchmark 1 M commits.
+  benchmark 1 M commits.
 - Fait le 25 septembre 2026 : extraction dans `Creatiwity/ramure` (historique conservé), licences,
   CI et pipeline de release avec signature et notarisation macOS (`docs/PACKAGING.md`).
 - Écarts assumés par rapport à la spec :

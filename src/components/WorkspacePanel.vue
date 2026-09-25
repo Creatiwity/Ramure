@@ -4,7 +4,8 @@
 // les dossiers intermédiaires fusionnés (« clients / acme / apps »), comme VS Code.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { ScanResult, TreeNode, WorkspaceStore } from "../api";
-import { ago, basename, relativeTo } from "../lib/format";
+import { useI18n } from "vue-i18n";
+import { ago, basename, relativeTo, type Locale } from "../lib/format";
 import { rank } from "../lib/fuzzy";
 import Icon from "./Icon.vue";
 
@@ -25,6 +26,8 @@ const emit = defineEmits<{
   collapse: [];
 }>();
 
+const { t, locale } = useI18n();
+const loc = computed(() => locale.value as Locale);
 const menuOpen = ref(false);
 const picker = ref<HTMLDivElement>();
 // Le menu des dossiers racines se ferme au clic extérieur et avec Échap.
@@ -143,14 +146,14 @@ function parentOf(path: string): string {
 <template>
   <aside class="ws">
     <header>
-      <span class="eyebrow">Espace</span>
-      <button class="icon" :title="`Replier le panneau (${mod}⇧E)`" @click="emit('collapse')"><Icon name="panel" /></button>
+      <span class="eyebrow">{{ t("ws.title") }}</span>
+      <button class="icon" :title="t('ws.collapse', { key: `${mod}⇧E` })" @click="emit('collapse')"><Icon name="panel" /></button>
     </header>
 
     <div ref="picker" class="root-picker">
-      <button class="root" :class="{ open: menuOpen }" :title="active?.path ?? 'Aucun dossier racine'" @click="menuOpen = !menuOpen">
+      <button class="root" :class="{ open: menuOpen }" :title="active?.path ?? t('ws.noRoot')" @click="menuOpen = !menuOpen">
         <Icon name="folder" />
-        <span class="rname">{{ active ? basename(active.path) : "Aucun dossier racine" }}</span>
+        <span class="rname">{{ active ? basename(active.path) : t("ws.noRoot") }}</span>
         <Icon name="chev" class="chev" />
       </button>
       <div v-if="menuOpen" class="menu" @mouseleave="confirmRemove = null">
@@ -159,47 +162,47 @@ function parentOf(path: string): string {
             <Icon :name="r.path === store.active ? 'check' : 'folder'" />
             <span class="two"><b>{{ basename(r.path) }}</b><span>{{ r.path }}</span></span>
           </button>
-          <button v-if="confirmRemove !== r.path" class="icon del" title="Retirer ce dossier racine (les dépôts ne sont pas touchés)" @click="confirmRemove = r.path">
+          <button v-if="confirmRemove !== r.path" class="icon del" :title="t('ws.removeTitle')" @click="confirmRemove = r.path">
             <Icon name="trash" />
           </button>
-          <button v-else class="confirm" @click="(emit('remove', r.path), (confirmRemove = null))">Retirer</button>
+          <button v-else class="confirm" @click="(emit('remove', r.path), (confirmRemove = null))">{{ t("ws.remove") }}</button>
         </div>
         <div v-if="store.roots.length" class="sep"></div>
-        <button class="mi add" :disabled="!canPick" @click="((menuOpen = false), emit('add'))"><Icon name="plus" />Ajouter un dossier racine…</button>
+        <button class="mi add" :disabled="!canPick" @click="((menuOpen = false), emit('add'))"><Icon name="plus" />{{ t("ws.addRoot") }}</button>
       </div>
     </div>
 
     <div v-if="!store.roots.length" class="empty">
-      <p>Choisissez un dossier racine (par exemple <span class="mono">~/code</span>) : Ramure y trouve vos dépôts et retient ceux que vous ouvrez.</p>
-      <button class="btn primary" :disabled="!canPick" @click="emit('add')"><Icon name="plus" />Ajouter un dossier racine…</button>
+      <p>{{ t("ws.empty", { example: "~/code" }) }}</p>
+      <button class="btn primary" :disabled="!canPick" @click="emit('add')"><Icon name="plus" />{{ t("ws.addRoot") }}</button>
     </div>
 
     <section v-if="recents.length" class="sec">
       <div class="sh">
-        <span class="eyebrow">Récents</span>
+        <span class="eyebrow">{{ t("ws.recents") }}</span>
       </div>
       <div v-for="(r, i) in recents" :key="r.path" class="recent" :class="{ cur: r.path === current }">
         <button class="go" :title="r.path" @click="emit('open', r.path)">
           <Icon name="repo" />
           <span class="two">
             <b>{{ basename(r.path) }}</b>
-            <span>{{ parentOf(r.path) ? `${parentOf(r.path)} · ` : "" }}{{ ago(r.opened_at) }}</span>
+            <span>{{ parentOf(r.path) ? `${parentOf(r.path)} · ` : "" }}{{ ago(r.opened_at, loc) }}</span>
           </span>
           <kbd>{{ mod }}{{ i + 1 }}</kbd>
         </button>
-        <button class="icon forget" title="Retirer des récents" @click="emit('forget', r.path)"><Icon name="x" /></button>
+        <button class="icon forget" :title="t('ws.forget')" @click="emit('forget', r.path)"><Icon name="x" /></button>
       </div>
     </section>
 
     <section v-if="active" class="sec grow">
       <div class="sh">
-        <span class="eyebrow">Dépôts</span>
-        <span class="meta">{{ scanning ? "recherche…" : scan ? `${scan.repos}${scan.truncated ? "+" : ""}` : "" }}</span>
-        <button class="icon" title="Rechercher à nouveau les dépôts" :disabled="scanning" @click="emit('rescan')"><Icon name="refresh" /></button>
+        <span class="eyebrow">{{ t("ws.repos") }}</span>
+        <span class="meta">{{ scanning ? t("ws.scanning") : scan ? `${scan.repos}${scan.truncated ? "+" : ""}` : "" }}</span>
+        <button class="icon" :title="t('ws.rescan')" :disabled="scanning" @click="emit('rescan')"><Icon name="refresh" /></button>
       </div>
       <label class="filter">
         <Icon name="search" />
-        <input id="ws-filter" v-model="filter" placeholder="Filtrer les dépôts" spellcheck="false" @keydown="onFilterKey" />
+        <input id="ws-filter" v-model="filter" :placeholder="t('ws.filter')" spellcheck="false" @keydown="onFilterKey" />
       </label>
       <div class="tree">
         <template v-if="filter.trim()">
@@ -208,7 +211,7 @@ function parentOf(path: string): string {
             <span class="nm">{{ relativeTo(f.item.path, scan?.root ?? null) }}</span>
             <span v-if="f.item.branch" class="br">{{ f.item.branch }}</span>
           </button>
-          <div v-if="!filtered.length" class="none">Aucun dépôt ne correspond.</div>
+          <div v-if="!filtered.length" class="none">{{ t("ws.noMatch") }}</div>
         </template>
         <template v-else>
           <button
@@ -226,8 +229,8 @@ function parentOf(path: string): string {
             <span class="nm">{{ l.node.name }}</span>
             <span v-if="l.node.branch" class="br">{{ l.node.branch }}</span>
           </button>
-          <div v-if="scan && !scan.tree.length" class="none">Aucun dépôt git trouvé dans ce dossier.</div>
-          <div v-if="scan?.truncated" class="none">Liste limitée aux {{ scan.repos }} premiers dépôts.</div>
+          <div v-if="scan && !scan.tree.length" class="none">{{ t("ws.noRepos") }}</div>
+          <div v-if="scan?.truncated" class="none">{{ t("ws.truncated", { n: scan.repos }) }}</div>
         </template>
       </div>
     </section>

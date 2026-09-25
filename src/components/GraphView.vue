@@ -4,7 +4,8 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowReactive, watch } from "vue";
 import { api, type Edge, type RepoSummary, type Row, type RowRef } from "../api";
 import { readPalette, type Palette } from "../lib/palette";
-import { dayKey, fullDate, middleEllipsis, parseMessage, relativeDate, splitHighlights } from "../lib/format";
+import { useI18n } from "vue-i18n";
+import { dayKey, fullDate, middleEllipsis, parseMessage, relativeDate, splitHighlights, type Locale } from "../lib/format";
 import Icon from "./Icon.vue";
 
 const props = defineProps<{
@@ -20,13 +21,16 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ select: [row: number]; open: [row: number] }>();
 
+const { t, locale } = useI18n();
+const loc = computed(() => locale.value as Locale);
+
 const RH = 28;
 const OVERSCAN = 12;
 const CHUNK = 256;
 const AUTHOR_W = 128;
 /** En dessous de cette largeur, la colonne auteur passe dans l'infobulle et les refs se resserrent. */
 const NARROW = 820;
-const DATE_W = 78;
+const DATE_W = 92;
 const MAX_VISIBLE_LANES = 12;
 const X0 = 12;
 
@@ -388,7 +392,7 @@ function refIcons(ref: RowRef): string[] {
 }
 function refTitle(r: Row): string {
   return sortedRefs(r)
-    .map((x) => (x.remote ? `${x.name} = ${x.remote}` : x.name) + (x.head ? " (HEAD)" : ""))
+    .map((x) => (x.remote ? `${x.name} = ${x.remote}` : x.name) + (x.head ? ` (${t("graph.head")})` : ""))
     .join("\n");
 }
 function pillColor(r: Row): string {
@@ -409,14 +413,15 @@ function wipLabel(): string {
   const s = props.summary.status;
   const changed = s.unstaged + s.untracked + s.conflicted;
   const parts = [];
-  if (changed) parts.push(`${changed} fichier${changed > 1 ? "s" : ""} modifié${changed > 1 ? "s" : ""}`);
-  if (s.staged) parts.push(`${s.staged} indexé${s.staged > 1 ? "s" : ""}`);
-  if (s.conflicted) parts.push(`${s.conflicted} en conflit`);
-  return parts.join(" · ") || "Changements non commités";
+  if (changed) parts.push(t("graph.wipChanged", changed));
+  if (s.staged) parts.push(t("graph.wipStaged", s.staged));
+  if (s.conflicted) parts.push(t("graph.wipConflicted", s.conflicted));
+  return parts.join(" · ") || t("graph.wipNone");
 }
 
 function pieces(r: Row) {
   const idx = highlights.get(r.row) ?? [];
+  if (!r.summary && r.kind !== "wip") return { type: null, scope: [], merged: null, pr: null, parts: [{ text: t("graph.unreadable"), hit: false }] };
   if (!props.conventional || r.kind === "stash") return { type: r.kind === "stash" ? "stash" : null, scope: [], merged: null, pr: null, parts: splitHighlights(r.summary, idx) };
   const m = parseMessage(r.summary);
   if (m.merged) return { type: "merge", scope: [], merged: m.merged, pr: m.pr, parts: [] };
@@ -450,7 +455,7 @@ const viewRows = computed<(ViewRow | { r: number; row: null })[]>(() =>
       title: refTitle(row),
       color: pillColor(row),
       view: pieces(row),
-      date: row.kind !== "wip" && showDate(row) ? relativeDate(row.time) : "",
+      date: row.kind !== "wip" && showDate(row) ? relativeDate(row.time, loc.value) : "",
       repeated: repeatedAuthor(row),
     };
   }),
@@ -466,7 +471,7 @@ async function selectRow(row: number) {
 <template>
   <div class="graph" :style="{ '--cols': columns }">
     <div class="ghead">
-      <span>Refs</span><span></span><span>Message</span><span>{{ narrow ? "" : "Auteur" }}</span><span>Date</span><span></span>
+      <span>{{ t("graph.refs") }}</span><span></span><span>{{ t("graph.message") }}</span><span>{{ narrow ? "" : t("graph.author") }}</span><span>{{ t("graph.date") }}</span><span></span>
     </div>
     <div ref="viewport" class="viewport" tabindex="0" @scroll.passive="onScroll" @keydown="onKey" @mouseleave="hovered = null">
       <div class="spacer" :style="{ height: total * RH + 'px' }">
@@ -509,14 +514,14 @@ async function selectRow(row: number) {
               </template>
             </span>
             <span class="who" :class="{ rep: v.repeated, gone: narrow }">{{ narrow ? "" : v.row.author }}</span>
-            <span class="when" :title="v.row.time ? (narrow ? `${v.row.author} · ` : '') + fullDate(v.row.time) : ''">{{ v.date }}</span>
+            <span class="when" :title="v.row.time ? (narrow ? `${v.row.author} · ` : '') + fullDate(v.row.time, loc) : ''">{{ v.date }}</span>
             <span></span>
           </div>
           <div v-else class="row placeholder" :style="{ top: v.r * RH + 'px' }"><span></span><span></span><span class="msg"><i></i></span></div>
         </template>
       </div>
     </div>
-    <canvas ref="minimap" class="minimap" title="Vue d'ensemble : HEAD, branches, tags, résultats" @mousedown="onMinimap" />
+    <canvas ref="minimap" class="minimap" :title="t('graph.minimap')" @mousedown="onMinimap" />
   </div>
 </template>
 
